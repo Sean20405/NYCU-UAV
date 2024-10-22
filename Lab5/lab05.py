@@ -1,8 +1,56 @@
 from djitellopy import Tello
-from getch import getch
 from pyimagesearch.pid import PID
 import cv2
 import numpy as np
+
+def calibration(frame_read):
+    print("Calibration...")
+    # cap = cv2.VideoCapture(0)
+    cnt = 0
+    img_pts = []
+
+    # Read chessboard corners
+    while True:
+        print(cnt)
+        while True:
+            frame = frame_read.frame
+            # ret, frame = cap.read()
+            cv2.imshow('frame', frame)
+            cv2.waitKey(33)
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            ret, corner = cv2.findChessboardCorners(frame, (9, 6), None)
+            if ret:
+                break
+
+        cv2.cornerSubPix(
+            frame, 
+            corner, 
+            winSize=(11, 11), 
+            zeroZone=(-1, -1), 
+            criteria=(cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.1)
+        )
+        img_pts.append(corner)
+        cnt += 1
+        if cnt >= 20:
+            break
+
+        cv2.waitKey(33)
+    
+    cv2.destroyAllWindows()
+
+    # Generate object points
+    obj_pts = np.array([[[j, i, 0] for i in range(6) for j in range(9)] for _ in range(20)], dtype=np.float32)
+
+    # Camera calibration
+    ret, camera_mat, dist_coeff, rvecs, tvecs = cv2.calibrateCamera(obj_pts, img_pts, frame.shape, None, None)
+    # print(camera_mat)
+    # print(dist_coeff)
+
+    # Save parameters
+    f = cv2.FileStorage("param-drone.xml", cv2.FILE_STORAGE_WRITE)
+    f.write("intrinsic", camera_mat)
+    f.write("distortion", dist_coeff)
+    f.release()
 
 def keyboard(self, key):
     #global is_flying
@@ -93,9 +141,10 @@ def auto(drone):
         elif markerIds is not None:
             rvec, tvec, _objPoints = cv2.aruco.estimatePoseSingleMarkers(markerCorners, 15, intrinsic, distortion)
             (x_err, y_err, z_err) = tvec[0][0]
-            z_err = z_err - 1.5
+            z_err = z_err - 100
             x_err = x_err * 2
             y_err = y_err * 2
+            print(x_err, y_err, z_err)
             xv = x_pid.update(x_err, sleep=0)
             yv = y_pid.update(y_err, sleep=0)
             zv = z_pid.update(z_err, sleep=0)
@@ -110,5 +159,9 @@ if __name__ == '__main__':
     drone = Tello()
     drone.connect()
     drone.streamon()
+
+    frame_read = drone.get_frame_read()
+    # calibration(frame_read)
+
     # teleop(drone)
     auto(drone)
