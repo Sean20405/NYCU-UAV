@@ -73,7 +73,7 @@ def teleop(drone):
 def see(drone, markId):
     frame_read = drone.get_frame_read()
 
-    dictionary = cv2.aruco.Dictionary_get(cv2.aruco.DICT_6X6_250)
+    dictionary = cv2.aruco.Dictionary_get(cv2.aruco.DICT_4X4_250)
     parameters = cv2.aruco.DetectorParameters_create()
 
     fs = cv2.FileStorage("param-drone.xml", cv2.FILE_STORAGE_READ)
@@ -102,15 +102,21 @@ def see(drone, markId):
         if key != -1:
             keyboard(drone, key)
         elif markerIds is not None:
-            if markId != markerIds[0][0]:
+            # Find the index of markId in markerIds
+            target_idx = None
+            for i, id in enumerate(markerIds):
+                if id[0] == markId:
+                    target_idx = i
+            if target_idx is None:
                 continue
+
             rvec, tvec, _objPoints = cv2.aruco.estimatePoseSingleMarkers(markerCorners, 15, intrinsic, distortion)
-            (x_err, y_err, z_err) = tvec[0][0]
+            (x_err, y_err, z_err) = tvec[target_idx][0]
             z_err = z_err - 100
             x_err = x_err * 2
             y_err = - y_err * 2
 
-            R, err = cv2.Rodrigues(rvec)
+            R, err = cv2.Rodrigues(np.array([rvec[target_idx]]))
             # print("err:", err)
             V = np.matmul(R, [0, 0, 1])
             rad = math.atan(V[0]/V[2])
