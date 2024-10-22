@@ -4,6 +4,54 @@ import cv2
 import numpy as np
 import math
 
+def keyboard(self, key):
+    #global is_flying
+    print("key:", key)
+    # key = ord(key)
+    fb_speed = 40
+    lf_speed = 40
+    ud_speed = 50
+    degree = 30
+    if key == ord('1'):
+        self.takeoff()
+        #is_flying = True
+    if key == ord('2'):
+        self.land()
+        #is_flying = False
+    if key == ord('3'):
+        self.send_rc_control(0, 0, 0, 0)
+        print("stop!!!!")
+    if key == ord('w'):
+        self.send_rc_control(0, fb_speed, 0, 0)
+        print("forward!!!!")
+    if key == ord('s'):
+        self.send_rc_control(0, (-1) * fb_speed, 0, 0)
+        print("backward!!!!")
+    if key == ord('a'):
+        self.send_rc_control((-1) * lf_speed, 0, 0, 0)
+        print("left!!!!")
+    if key == ord('d'):
+        self.send_rc_control(lf_speed, 0, 0, 0)
+        print("right!!!!")
+    if key == ord('z'):
+        self.send_rc_control(0, 0, ud_speed, 0)
+        print("down!!!!")
+    if key == ord('x'):
+        self.send_rc_control(0, 0, (-1) *ud_speed, 0)
+        print("up!!!!")
+    if key == ord('c'):
+        self.send_rc_control(0, 0, 0, degree)
+        print("rotate!!!!")
+    if key == ord('v'):
+        self.send_rc_control(0, 0, 0, (-1) *degree)
+        print("counter rotate!!!!")
+    if key == ord('5'):
+        height = self.get_height()
+        print(height)
+    if key == ord('6'):
+        battery = self.get_battery()
+        print (battery)
+
 def mss(update, max_speed_threshold=30):
     if update > max_speed_threshold:
         update = max_speed_threshold
@@ -13,9 +61,14 @@ def mss(update, max_speed_threshold=30):
     return update
 
 def teleop(drone):
-    key = cv2.waitKey(33)
-    self.takeoff()
-    drone.move("forward")
+    key = cv2.waitKey(100)
+    drone.takeoff()
+    key = cv2.waitKey(100)
+    drone.move("forward", 50)
+    key = cv2.waitKey(100)
+    drone.move("back", 50)
+    key = cv2.waitKey(100)
+    drone.land()
 
 def see(drone, markId):
     frame_read = drone.get_frame_read()
@@ -86,6 +139,10 @@ def see(drone, markId):
         else:
             drone.send_rc_control(0, 0, 0, 0)
 
+def auto(drone):
+    see(drone, 1)
+    drone.move("right", 50)
+
 
 if __name__ == '__main__':
     drone = Tello()
@@ -95,7 +152,7 @@ if __name__ == '__main__':
     frame_read = drone.get_frame_read()
     # calibration(frame_read)
 
-    # teleop(drone)
-    see(drone, 1)
-    print("done")
+    teleop(drone)
+    # see(drone, 1)
+    # print("done")
     # auto(drone)
