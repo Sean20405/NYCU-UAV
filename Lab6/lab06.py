@@ -1,3 +1,4 @@
+from random import randint
 from djitellopy import Tello
 from pyimagesearch.pid import PID
 import cv2
@@ -115,7 +116,7 @@ def see(drone, markId):
             (x_err, y_err, z_err) = tvec[target_idx][0]
             z_err = z_err - 75
             x_err = x_err * 2
-            y_err = - y_err * 2
+            y_err = - (y_err + 10) * 2
 
             R, err = cv2.Rodrigues(np.array([rvec[target_idx]]))
             # print("err:", err)
@@ -125,34 +126,41 @@ def see(drone, markId):
             # print(deg)
             yaw_err = yaw_pid.update(deg, sleep=0)
             
-            x_err = mss(x_err)
-            y_err = mss(y_err)
-            z_err = mss(z_err)
-            yaw_err = mss(yaw_err)
+            x_err = x_pid.update(x_err, sleep=0)
+            y_err = y_pid.update(y_err, sleep=0)
+            z_err = z_pid.update(z_err, sleep=0)
+            yaw_err = yaw_pid.update(yaw_err, sleep=0)
 
             print("errs:", x_err, y_err, z_err, yaw_err)
             
-            xv = x_pid.update(x_err, sleep=0)
-            yv = y_pid.update(y_err, sleep=0)
-            zv = z_pid.update(z_err, sleep=0)
-            rv = yaw_pid.update(yaw_err, sleep=0)
+            xv = mss(x_err)
+            yv = mss(y_err)
+            zv = mss(z_err)
+            rv = mss(yaw_err)
             # print(xv, yv, zv, rv)
             # drone.send_rc_control(min(20, int(xv//2)), min(20, int(zv//2)), min(20, int(yv//2)), 0)
-            if abs(z_err) <= 10 and abs(y_err) <= 10 and abs(yaw_err) <= 10:
+            if abs(z_err) <= 10 and abs(y_err) <= 50 and abs(x_err) <= 50:
                 print("Saw marker", markId)
                 return
             else: 
                 # continue
-                drone.send_rc_control(0, int(zv//2), int(yv), int(yaw_err))
+                # if abs(y_err) >= 10 or abs(x_err) >= 10:
+                #     drone.send_rc_control(int(xv), 0, int(yv), 0)
+                # else:
+                drone.send_rc_control(int(xv), int(zv//2), int(yv), 0)
         else:
-            drone.send_rc_control(0, 0, 0, 0)
+            if markId == 2:
+                drone.send_rc_control(0, -3, 0, 0)
+            else:
+                drone.send_rc_control(0, 0, 0, 0)
 
 def auto(drone):
     see(drone, 1)
-    drone.land()
-    # drone.move("right", 50)
-    # see(drone, 2)
-    # drone.move("left", 50)
+    # drone.land()
+    drone.move("right", 60)
+    see(drone, 2)
+    drone.move("left", 70)
+    drone.move("forward", 70)
 
 
 if __name__ == '__main__':
