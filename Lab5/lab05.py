@@ -154,7 +154,7 @@ def auto(drone):
             (x_err, y_err, z_err) = tvec[0][0]
             z_err = z_err - 100
             x_err = x_err * 2
-            y_err = y_err * 2
+            y_err = - y_err * 2
 
             R, _ = cv2.Rodrigues(rvec)
             V = np.matmul(R, [0, 0, 1])
@@ -176,7 +176,7 @@ def auto(drone):
             rv = yaw_pid.update(yaw_err, sleep=0)
             print(xv, yv, zv, rv)
             # drone.send_rc_control(min(20, int(xv//2)), min(20, int(zv//2)), min(20, int(yv//2)), 0)
-            drone.send_rc_control(0, int(zv//2), min(20, int(yv)), int(yaw_err))
+            drone.send_rc_control(0, int(zv//2), int(yv), int(yaw_err))
         else:
             drone.send_rc_control(0, 0, 0, 0)
 
