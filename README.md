@@ -18,6 +18,13 @@ The lab code for course Computer Vision for UAV Autopilot in NYCU
     opencv-contrib-python==4.4.0.46
     djitellopy
     ```
+- Requirement_v2 (using latest package version, for MacOS)
+    ```
+    python=3.9
+    opencv-python=4.10.0.84
+    opencv-contrib-python==4.10.0.84
+    djitellopy==2.5.0
+    ```
 - install
     ```
     $ pip install -r requirements.txt
