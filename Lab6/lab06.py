@@ -73,7 +73,7 @@ def teleop(drone):
 def see(drone, markId):
     frame_read = drone.get_frame_read()
 
-    dictionary = cv2.aruco.Dictionary_get(cv2.aruco.DICT_6X6_250)
+    dictionary = cv2.aruco.Dictionary_get(cv2.aruco.DICT_4X4_250)
     parameters = cv2.aruco.DetectorParameters_create()
 
     fs = cv2.FileStorage("param-drone.xml", cv2.FILE_STORAGE_READ)
@@ -106,7 +106,7 @@ def see(drone, markId):
                 continue
             rvec, tvec, _objPoints = cv2.aruco.estimatePoseSingleMarkers(markerCorners, 15, intrinsic, distortion)
             (x_err, y_err, z_err) = tvec[0][0]
-            z_err = z_err - 100
+            z_err = z_err - 75
             x_err = x_err * 2
             y_err = - y_err * 2
 
@@ -115,7 +115,7 @@ def see(drone, markId):
             V = np.matmul(R, [0, 0, 1])
             rad = math.atan(V[0]/V[2])
             deg = rad / math.pi * 180
-            print(deg)
+            # print(deg)
             yaw_err = yaw_pid.update(deg, sleep=0)
             
             x_err = mss(x_err)
@@ -131,17 +131,21 @@ def see(drone, markId):
             rv = yaw_pid.update(yaw_err, sleep=0)
             # print(xv, yv, zv, rv)
             # drone.send_rc_control(min(20, int(xv//2)), min(20, int(zv//2)), min(20, int(yv//2)), 0)
-            if abs(z_err) <= 30 and abs(y_err) <= 20 and abs(yaw_err) <= 10:
+            if abs(z_err) <= 10 and abs(y_err) <= 10 and abs(yaw_err) <= 10:
+                print("Saw marker", markId)
                 return
             else: 
-                continue
-                # drone.send_rc_control(0, int(zv//2), int(yv), int(yaw_err))
+                # continue
+                drone.send_rc_control(0, int(zv//2), int(yv), int(yaw_err))
         else:
             drone.send_rc_control(0, 0, 0, 0)
 
 def auto(drone):
     see(drone, 1)
-    drone.move("right", 50)
+    drone.land()
+    # drone.move("right", 50)
+    # see(drone, 2)
+    # drone.move("left", 50)
 
 
 if __name__ == '__main__':
@@ -152,7 +156,7 @@ if __name__ == '__main__':
     frame_read = drone.get_frame_read()
     # calibration(frame_read)
 
-    teleop(drone)
+    # teleop(drone)
     # see(drone, 1)
     # print("done")
-    # auto(drone)
+    auto(drone)
