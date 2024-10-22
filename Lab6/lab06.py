@@ -154,7 +154,20 @@ def see(drone, markId):
             else:
                 drone.send_rc_control(0, 0, 0, 0)
 
+def detect(drone, markId):
+    frame = drone.get_frame_read().frame
+    dictionary = cv2.aruco.Dictionary_get(cv2.aruco.DICT_4X4_250)
+    parameters = cv2.aruco.DetectorParameters_create()
+    markerCorners, markerIds, rejectedCandidates = cv2.aruco.detectMarkers(frame, dictionary, parameters=parameters)
+    for i, id in enumerate(markerIds):
+        if id[0] == markId:
+            return True
+    return False
+
 def auto(drone):
+    drone.takeoff()
+    while not detect(drone, 1):
+        self.send_rc_control(0, 0, 50, 0)
     see(drone, 1)
     # drone.land()
     drone.move("right", 60)
