@@ -69,6 +69,7 @@ def detection(frame_read):
         # frame = frame_read.frame
         ret, frame = cap.read()
         markerCorners, markerIds, rejectedCandidates = cv2.aruco.detectMarkers(frame, dictionary, parameters=parameters)
+        print(markerIds)
         if markerIds is None:
             cv2.imshow('frame', frame)
             key = cv2.waitKey(33)
