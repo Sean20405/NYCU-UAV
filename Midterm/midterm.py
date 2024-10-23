@@ -14,6 +14,7 @@ error = {1: [50, 50, 10],
 
 y_dist = {0: 10, 1: 10, 2: 10, 3: 10, 4: 10, 5: 10, 6: 20}
 z_dist = {0: 75, 1: 75, 2: 75, 3: 75, 4: 75, 5: 75, 6: 240}
+yaw_range = 10
 
 def keyboard(self, key):
     #global is_flying
@@ -90,10 +91,74 @@ def hasMarker(markerIds, stopId):
             return True
     return False
 
-def see(drone, markId):
+# Adjust angle to make the drone face the given markId
+def correctAngle(drone, markId):
     frame_read = drone.get_frame_read()
 
     dictionary = cv2.aruco.Dictionary_get(cv2.aruco.DICT_4X4_250)
+    parameters = cv2.aruco.DetectorParameters_create()
+
+    fs = cv2.FileStorage("param-drone.xml", cv2.FILE_STORAGE_READ)
+    intrinsic = fs.getNode("intrinsic").mat()
+    distortion = fs.getNode("distortion").mat()
+
+    yaw_pid = PID(kP=0.7, kI=0.0001, kD=0.1)
+    yaw_pid.initialize()
+
+    while True:
+        frame = frame_read.frame
+        markerCorners, markerIds, rejectedCandidates = cv2.aruco.detectMarkers(frame, dictionary, parameters=parameters)
+        print(markerIds)
+        
+        frame = cv2.aruco.drawDetectedMarkers(frame, markerCorners, markerIds)
+
+        cv2.imshow('frame', cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
+        key = cv2.waitKey(33)
+        if key != -1:
+            keyboard(drone, key)
+        elif markerIds is not None:
+            # Find the index of markId in markerIds
+            target_idx = None
+            for i, id in enumerate(markerIds):
+                if id[0] == markId:
+                    target_idx = i
+            if target_idx is None:
+                continue
+
+            rvec, tvec, _objPoints = cv2.aruco.estimatePoseSingleMarkers(markerCorners, 15, intrinsic, distortion)
+
+            # Calculate angle
+            R, err = cv2.Rodrigues(np.array([rvec[target_idx]]))
+            # print("err:", err)
+            V = np.matmul(R, [0, 0, 1])
+            rad = math.atan(V[0]/V[2])
+            deg = rad / math.pi * 180
+            deg *= 2
+            # print(deg)
+
+            # Display angle
+            cv2.putText(frame, text=f'deg: {round(deg, 2)}', fontFace=cv2.FONT_HERSHEY_SIMPLEX, 
+                fontScale=0.7, org=(10, 10), color=(0, 255, 255), thickness=1.2)
+            cv2.imshow('frame', cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
+
+            yaw_err = yaw_pid.update(deg, sleep=0)
+
+            print("errs:", yaw_err)
+            
+            rv = int(mss(yaw_err, 50))
+
+            if abs(yaw_err) <= yaw_range:
+                print("Finish correct", markId)
+                return
+            else: 
+                drone.send_rc_control(0, 0, 0, rv)
+        else:
+            else:
+                drone.send_rc_control(0, 0, 0, 0)
+
+def see(drone, markId):
+    frame_read = drone.get_frame_read()
+
     dictionary = cv2.aruco.Dictionary_get(cv2.aruco.DICT_4X4_250)
     parameters = cv2.aruco.DetectorParameters_create()
 
@@ -222,6 +287,7 @@ def auto(drone):
 
     ## 5: 
     see(drone, 5)
+    correctAngle(drone, 5)
     drone.move("left", 300)
     drone.move("back", 100)
 
