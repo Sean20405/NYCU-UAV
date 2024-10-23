@@ -167,7 +167,7 @@ def detect(drone, markId):
 def auto(drone):
     drone.takeoff()
     while not detect(drone, 1):
-        self.send_rc_control(0, 0, 50, 0)
+        drone.send_rc_control(0, 0, 50, 0)
     see(drone, 1)
     # drone.land()
     drone.move("right", 60)
