@@ -13,7 +13,7 @@ error = {1: [50, 50, 10],
          6: [5, 10, 5]}
 
 y_dist = {0: 10, 1: 10, 2: 10, 3: 10, 4: 10, 5: 10, 6: 20}
-z_dist = {0: 75, 1: 75, 2: 75, 3: 75, 4: 75, 5: 75, 6: 220}
+z_dist = {0: 75, 1: 75, 2: 75, 3: 75, 4: 75, 5: 75, 6: 240}
 
 def keyboard(self, key):
     #global is_flying
@@ -117,10 +117,6 @@ def see(drone, markId):
         print(markerIds)
         
         frame = cv2.aruco.drawDetectedMarkers(frame, markerCorners, markerIds)
-        rvec, tvec, _objPoints = cv2.aruco.estimatePoseSingleMarkers(markerCorners, 15, intrinsic, distortion)
-        (x_err, y_err, z_err) = tvec[target_idx][0]
-        cv2.putText(frame, text=f'x: {round(x_err, 2)}  y: {round(y_err, 2)}  z: {round(z_err, 2)}', fontFace=cv2.FONT_HERSHEY_SIMPLEX, 
-            fontScale=0.4, org=(10, 10), color=(0, 255, 255), thickness=1)
 
         cv2.imshow('frame', cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
         key = cv2.waitKey(33)
@@ -137,9 +133,14 @@ def see(drone, markId):
 
             rvec, tvec, _objPoints = cv2.aruco.estimatePoseSingleMarkers(markerCorners, 15, intrinsic, distortion)
             (x_err, y_err, z_err) = tvec[target_idx][0]
+
+            cv2.putText(frame, text=f'x: {round(x_err, 2)}  y: {round(y_err, 2)}  z: {round(z_err, 2)}', fontFace=cv2.FONT_HERSHEY_SIMPLEX, 
+                fontScale=0.4, org=(10, 10), color=(0, 255, 255), thickness=1)
+
+            cv2.imshow('frame', cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
                 
             z_err = z_err - z_dist[markId]; z_err = z_err
-            x_err = x_err * 2
+            x_err = x_err
             y_err = - (y_err + y_dist[markId]) * 2
 
             R, err = cv2.Rodrigues(np.array([rvec[target_idx]]))
@@ -157,7 +158,7 @@ def see(drone, markId):
 
             print("errs:", x_err, y_err, z_err, yaw_err)
             
-            xv = int(mss(x_err))
+            xv = int(mss(x_err*2))
             yv = int(mss(y_err))
             zv = int(mss(z_err * 1.5 if z_err < 0 else z_err, 50))
             rv = int(mss(yaw_err, 50))
@@ -237,6 +238,7 @@ def test(drone):
 
     ## 6: See the marker and land.
     see(drone, 6)
+    drone.send_rc_control(0, 0, 0, 0)
     # drone.move("back", 80)
     drone.land()
 
