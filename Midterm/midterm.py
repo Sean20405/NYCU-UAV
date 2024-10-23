@@ -156,7 +156,7 @@ def see(drone, markId):
                     return
                 else:
                     drone.send_rc_control(0, zv//2, yv, rv)
-            elif abs(error[markId][0]) <= 10 and abs(error[markId][1]) <= 50 and abs(error[markId][2]) <= 50:
+            elif abs(x_err) <= error[markId][0] and abs(y_err) <= error[markId][1] and abs(z_err) <= error[markId][2]:
                 print("Saw marker", markId)
                 return
             else: 
