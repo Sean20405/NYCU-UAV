@@ -10,7 +10,10 @@ error = {1: [50, 50, 10],
          3: [10, 10, 10], 
          4: [40, 40, 10], 
          5: [20, 20, 10], 
-         6: [10, 10, 10]}
+         6: [5, 10, 5]}
+
+y_dist = {0: 10, 1: 10, 2: 10, 3: 10, 4: 10, 5: 10, 6: 10}
+z_dist = {0: 75, 1: 75, 2: 75, 3: 75, 4: 75, 5: 75, 6: 160}
 
 def keyboard(self, key):
     #global is_flying
@@ -78,9 +81,12 @@ def teleop(drone):
     key = cv2.waitKey(100)
     drone.land()
 
+
+
 def hasMarker(markerIds, stopId):
     for i, id in enumerate(markerIds):
-        if id[0] == stopId:
+        if id[0] == stopId and len(markerIds) == 1:
+            print("STOPPPPP")
             return True
     return False
 
@@ -127,15 +133,17 @@ def see(drone, markId):
 
             rvec, tvec, _objPoints = cv2.aruco.estimatePoseSingleMarkers(markerCorners, 15, intrinsic, distortion)
             (x_err, y_err, z_err) = tvec[target_idx][0]
-            z_err = z_err - 75
+                
+            z_err = z_err - z_dist[markId]; z_err = z_err
             x_err = x_err * 2
-            y_err = - (y_err + 10) * 2
+            y_err = - (y_err + y_dist[markId]) * 2
 
             R, err = cv2.Rodrigues(np.array([rvec[target_idx]]))
             # print("err:", err)
             V = np.matmul(R, [0, 0, 1])
             rad = math.atan(V[0]/V[2])
             deg = rad / math.pi * 180
+            deg *= 2
             # print(deg)
             
             x_err = x_pid.update(x_err, sleep=0)
@@ -147,15 +155,17 @@ def see(drone, markId):
             
             xv = int(mss(x_err))
             yv = int(mss(y_err))
-            zv = int(mss(z_err))
-            rv = int(mss(yaw_err))
+            zv = int(mss(z_err * 1.5 if z_err < 0 else z_err, 50))
+            rv = int(mss(yaw_err, 50))
             # print(xv, yv, zv, rv)
             # drone.send_rc_control(min(20, int(xv//2)), min(20, int(zv//2)), min(20, int(yv//2)), 0)
             if markId == 0: # Follow the marker
                 if hasMarker(markerIds, 4):
                     return
                 else:
-                    drone.send_rc_control(0, zv//2, yv, rv)
+                    zv = zv // 2 if zv < 0 else int(zv / 2.5)
+                    
+                    drone.send_rc_control(0, zv, yv, rv)
             elif abs(x_err) <= error[markId][0] and abs(y_err) <= error[markId][1] and abs(z_err) <= error[markId][2]:
                 print("Saw marker", markId)
                 return
@@ -195,8 +205,8 @@ def auto(drone):
     ## 2: Go down and pass under the table.
     drone.move("down", 50)
     see(drone, 3)
-    drone.move("down", 20)
-    drone.move("forward", 70)
+    drone.move("down", 50)
+    drone.move("forward", 100)
 
     ## 3: Follow the marker
     see(drone, 0)
@@ -212,10 +222,19 @@ def auto(drone):
 
     ## 6: See the marker and land.
     see(drone, 6)
-    drone.move("back", 100)
+    # drone.move("back", 100)
     drone.land()
     
+def test(drone):
+    ## 5: 
+    see(drone, 5)
+    drone.move("left", 300)
+    drone.move("back", 60)
 
+    ## 6: See the marker and land.
+    see(drone, 6)
+    # drone.move("back", 80)
+    drone.land()
 
 if __name__ == '__main__':
     drone = Tello()
@@ -228,4 +247,5 @@ if __name__ == '__main__':
     # teleop(drone)
     # see(drone, 1)
     # print("done")
-    auto(drone)
+    # auto(drone)
+    test(drone)
