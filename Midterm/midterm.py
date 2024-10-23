@@ -5,6 +5,13 @@ import cv2
 import numpy as np
 import math
 
+error = {1: [50, 50, 10],
+         2: [50, 50, 10],
+         3: [10, 10, 10], 
+         4: [40, 40, 10], 
+         5: [20, 20, 10], 
+         6: [10, 10, 10]}
+
 def keyboard(self, key):
     #global is_flying
     print("key:", key)
@@ -149,7 +156,7 @@ def see(drone, markId):
                     return
                 else:
                     drone.send_rc_control(0, zv//2, yv, rv)
-            elif abs(z_err) <= 10 and abs(y_err) <= 50 and abs(x_err) <= 50:
+            elif abs(error[markId][0]) <= 10 and abs(error[markId][1]) <= 50 and abs(error[markId][2]) <= 50:
                 print("Saw marker", markId)
                 return
             else: 
@@ -183,14 +190,30 @@ def auto(drone):
     drone.move("left", 70)
     drone.move("forward", 70)
 
-    ## 2
+    ## 2: Go down and pass under the table.
     drone.move("down", 50)
     see(drone, 3)
     drone.move("down", 20)
     drone.move("forward", 70)
 
-    ## 3
+    ## 3: Follow the marker
     see(drone, 0)
+
+    ## 4: Turn right 90 degrees and fly forward.
+    see(drone, 4)
+    drone.rotate_clockwise(90)
+
+    ## 5: 
+    see(drone, 5)
+    drone.move("left", 300)
+    drone.move("back", 100)
+
+    ## 6: See the marker and land.
+    see(drone, 6)
+    drone.move("back", 100)
+    drone.land()
+    
+
 
 if __name__ == '__main__':
     drone = Tello()
