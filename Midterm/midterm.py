@@ -120,9 +120,9 @@ def see(drone, markId):
         rvec, tvec, _objPoints = cv2.aruco.estimatePoseSingleMarkers(markerCorners, 15, intrinsic, distortion)
         (x_err, y_err, z_err) = tvec[target_idx][0]
         cv2.putText(frame, text=f'x: {round(x_err, 2)}  y: {round(y_err, 2)}  z: {round(z_err, 2)}', fontFace=cv2.FONT_HERSHEY_SIMPLEX, 
-            fontScale=0.4, org=text_coor, color=(0, 255, 255), thickness=1)
+            fontScale=0.4, org=(10, 10), color=(0, 255, 255), thickness=1)
 
-        cv2.imshow('frame', frame)
+        cv2.imshow('frame', cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
         key = cv2.waitKey(33)
         if key != -1:
             keyboard(drone, key)
