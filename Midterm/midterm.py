@@ -172,6 +172,8 @@ def detect(drone, markId):
     dictionary = cv2.aruco.Dictionary_get(cv2.aruco.DICT_4X4_250)
     parameters = cv2.aruco.DetectorParameters_create()
     markerCorners, markerIds, rejectedCandidates = cv2.aruco.detectMarkers(frame, dictionary, parameters=parameters)
+    if markerIds is None:
+        return False
     for i, id in enumerate(markerIds):
         if id[0] == markId:
             return True
