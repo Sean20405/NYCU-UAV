@@ -8,13 +8,13 @@ import math
 error = {1: [50, 50, 10],
          2: [50, 50, 10],
          3: [10, 10, 10], 
-         4: [40, 40, 10], 
+         4: [10, 10, 10], 
          5: [20, 20, 10], 
-         6: [5, 10, 5]}
+         6: [2, 10, 5]}
 
 y_dist = {0: 10, 1: 10, 2: 10, 3: 10, 4: 10, 5: 10, 6: 20}
-z_dist = {0: 75, 1: 75, 2: 75, 3: 75, 4: 75, 5: 75, 6: 240}
-yaw_range = 10
+z_dist = {0: 75, 1: 75, 2: 75, 3: 75, 4: 120, 5: 75, 6: 240}
+yaw_range = 2
 
 def keyboard(self, key):
     #global is_flying
@@ -93,6 +93,7 @@ def hasMarker(markerIds, stopId):
 
 # Adjust angle to make the drone face the given markId
 def correctAngle(drone, markId):
+    print(f'Correct Angle for marker #{markId}')
     frame_read = drone.get_frame_read()
 
     dictionary = cv2.aruco.Dictionary_get(cv2.aruco.DICT_4X4_250)
@@ -133,12 +134,11 @@ def correctAngle(drone, markId):
             V = np.matmul(R, [0, 0, 1])
             rad = math.atan(V[0]/V[2])
             deg = rad / math.pi * 180
-            deg *= 2
             # print(deg)
 
             # Display angle
             cv2.putText(frame, text=f'deg: {round(deg, 2)}', fontFace=cv2.FONT_HERSHEY_SIMPLEX, 
-                fontScale=0.7, org=(10, 10), color=(0, 255, 255), thickness=1.2)
+                fontScale=0.7, org=(10, 10), color=(0, 255, 255), thickness=1)
             cv2.imshow('frame', cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
 
             yaw_err = yaw_pid.update(deg, sleep=0)
@@ -151,7 +151,7 @@ def correctAngle(drone, markId):
                 print("Finish correct", markId)
                 return
             else: 
-                drone.send_rc_control(0, 0, 0, rv)
+                drone.send_rc_control(0, 0, 0, rv // 2)
         else:
             drone.send_rc_control(0, 0, 0, 0)
 
@@ -189,7 +189,9 @@ def see(drone, markId):
         elif markerIds is not None:
             # See 4 and not see 1     ### TODO: TESTTTTTT
             markerIds_flatten = markerIds.flatten()
-            if 0 not in markerIds_flatten and 4 in markerIds_flatten:
+            print(markerIds_flatten)
+            if markId == 0 and 0 not in markerIds_flatten and 4 in markerIds_flatten:
+                print("BREAK")
                 return
 
             # Find the index of markId in markerIds
@@ -204,7 +206,7 @@ def see(drone, markId):
             (x_err, y_err, z_err) = tvec[target_idx][0]
 
             cv2.putText(frame, text=f'x: {round(x_err, 2)}  y: {round(y_err, 2)}  z: {round(z_err, 2)}', fontFace=cv2.FONT_HERSHEY_SIMPLEX, 
-                fontScale=0.4, org=(10, 10), color=(0, 255, 255), thickness=1)
+                fontScale=0.8, org=(20, 20), color=(0, 255, 255), thickness=1)
 
             cv2.imshow('frame', cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
                 
@@ -244,7 +246,10 @@ def see(drone, markId):
                 print("Saw marker", markId)
                 return
             else: 
-                drone.send_rc_control(xv, zv//2, yv, 0)
+                if markId == 4 or markId == 5:
+                    drone.send_rc_control(xv, int(zv/2.5), yv, rv)
+                else:
+                    drone.send_rc_control(xv, zv//2, yv, 0)
         else:
             if markId == 2: # 看不到 Marker2 的話，往下飛
                 drone.send_rc_control(0, -3, 0, 0)
@@ -296,22 +301,29 @@ def auto(drone):
     drone.move("back", 100)
 
     ## 6: See the marker and land.
+    
     see(drone, 6)
+    
     # drone.move("back", 100)
     drone.land()
     
 def test(drone):
-    see(drone, 0)
+    # see(drone, 0)
+    # print("DONE SEEING 0")
 
-    ## 4: Turn right 90 degrees and fly forward.
-    see(drone, 4)
-    drone.rotate_clockwise(90)
-    ## 5: 
-    see(drone, 5)
-    drone.move("left", 300)
-    drone.move("back", 60)
+    # ## 4: Turn right 90 degrees and fly forward.
+    # see(drone, 4)
+    # print("DONE SEEING 4")
+    # correctAngle(drone, 4)
+    # drone.rotate_clockwise(90)
+    # ## 5: 
+    # see(drone, 5)
+    # correctAngle(drone, 5)
+    # drone.move("left", 300)
+    # drone.move("back", 60)
 
     ## 6: See the marker and land.
+    correctAngle(drone, 6)
     see(drone, 6)
     drone.send_rc_control(0, 0, 0, 0)
     # drone.move("back", 80)
