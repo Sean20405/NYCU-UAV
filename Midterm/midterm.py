@@ -153,8 +153,7 @@ def correctAngle(drone, markId):
             else: 
                 drone.send_rc_control(0, 0, 0, rv)
         else:
-            else:
-                drone.send_rc_control(0, 0, 0, 0)
+            drone.send_rc_control(0, 0, 0, 0)
 
 def see(drone, markId):
     frame_read = drone.get_frame_read()
