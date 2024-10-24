@@ -10,10 +10,10 @@ error = {1: [50, 50, 10],
          3: [10, 10, 10], 
          4: [10, 10, 10], 
          5: [20, 20, 10], 
-         6: [5, 10, 5]}
+         6: [10, 50, 10]}
 
 y_dist = {0: 10, 1: 10, 2: 10, 3: 10, 4: 10, 5: 10, 6: 20}
-z_dist = {0: 75, 1: 75, 2: 75, 3: 75, 4: 120, 5: 75, 6: 160}
+z_dist = {0: 75, 1: 75, 2: 75, 3: 75, 4: 75, 5: 75, 6: 155}
 yaw_range = 2
 
 def keyboard(self, key):
@@ -206,32 +206,33 @@ def see(drone, markId):
             rvec, tvec, _objPoints = cv2.aruco.estimatePoseSingleMarkers(markerCorners, 15, intrinsic, distortion)
             (x_err, y_err, z_err) = tvec[target_idx][0]
 
-            cv2.putText(frame, text=f'x: {round(x_err, 2)}  y: {round(y_err, 2)}  z: {round(z_err, 2)}', fontFace=cv2.FONT_HERSHEY_SIMPLEX, 
-                fontScale=0.8, org=(20, 20), color=(0, 255, 255), thickness=1)
-
-            cv2.imshow('frame', cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
-                
-            z_err = z_err - z_dist[markId]; z_err = z_err
-            x_err = x_err
-            y_err = - (y_err + y_dist[markId]) * 2
-
             R, err = cv2.Rodrigues(np.array([rvec[target_idx]]))
             # print("err:", err)
             V = np.matmul(R, [0, 0, 1])
             rad = math.atan(V[0]/V[2])
             deg = rad / math.pi * 180
-            deg *= 2
             # print(deg)
+
+            cv2.putText(frame, text=f'x: {round(x_err, 2)}  y: {round(y_err, 2)}  z: {round(z_err, 2)} yaw: {round(deg, 2)}', fontFace=cv2.FONT_HERSHEY_SIMPLEX, 
+                fontScale=0.8, org=(20, 20), color=(0, 255, 255), thickness=1)
+
+            cv2.imshow('frame', cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
+                
+            z_err = z_err - z_dist[markId]
+            x_err = x_err
+            y_err = - (y_err + y_dist[markId]) * 2
+
+            
             
             x_err = x_pid.update(x_err, sleep=0)
             y_err = y_pid.update(y_err, sleep=0)
             z_err = z_pid.update(z_err, sleep=0)
-            yaw_err = yaw_pid.update(deg, sleep=0)
+            yaw_err = yaw_pid.update(deg*2, sleep=0)
 
             print("errs:", x_err, y_err, z_err, yaw_err)
             print(counter)
             
-            xv = int(mss(x_err*2))
+            xv = int(mss(x_err))
             yv = int(mss(y_err))
             zv = int(mss(z_err * 1.5 if z_err < 0 else z_err, 50))
             rv = int(mss(yaw_err, 50))
@@ -245,7 +246,10 @@ def see(drone, markId):
                     
                     drone.send_rc_control(0, zv, yv, rv)
             elif abs(x_err) <= error[markId][0] and abs(y_err) <= error[markId][1] and abs(z_err) <= error[markId][2]:
-                if markId == 6 and counter < 30:
+                if markId == 4 or markId == 5 or markId == 6:
+                    if abs(yaw_err) > 5:
+                        continue
+                if markId == 6 and counter < 10:
                     counter = counter + 1
                     continue
                 else:
@@ -286,53 +290,54 @@ def auto(drone):
     ## 1
     see(drone, 1)
     # drone.land()
-    drone.move("right", 60)
+    drone.move("right", 80)
     see(drone, 2)
-    drone.move("left", 70)
+    drone.move("left", 90)
     drone.move("forward", 70)
 
     ## 2: Go down and pass under the table.
     drone.move("down", 50)
     see(drone, 3)
     drone.move("down", 50)
-    drone.move("forward", 100)
+    drone.move("forward", 150)
 
     ## 3: Follow the marker
     see(drone, 0)
 
     ## 4: Turn right 90 degrees and fly forward.
     see(drone, 4)
+    print("DONE SEEING 4")
+    # correctAngle(drone, 4)
     drone.rotate_clockwise(90)
-
     ## 5: 
     see(drone, 5)
-    correctAngle(drone, 5)
+    # correctAngle(drone, 5)
     drone.move("left", 300)
-    drone.move("back", 100)
+    drone.move("back", 60)
 
-    ## 6: See the marker and land.
-    
+    # 6: See the marker and land.
+    # correctAngle(drone, 6)
     see(drone, 6)
-    
-    # drone.move("back", 100)
+    drone.send_rc_control(0, 0, 0, 0)
+    # drone.move("back", 80)
     drone.land()
     
 def test(drone):
     # see(drone, 0)
     # print("DONE SEEING 0")
 
-    # ## 4: Turn right 90 degrees and fly forward.
-    # see(drone, 4)
-    # print("DONE SEEING 4")
+    ## 4: Turn right 90 degrees and fly forward.
+    see(drone, 4)
+    print("DONE SEEING 4")
     # correctAngle(drone, 4)
-    # drone.rotate_clockwise(90)
-    # ## 5: 
-    # see(drone, 5)
+    drone.rotate_clockwise(90)
+    ## 5: 
+    see(drone, 5)
     # correctAngle(drone, 5)
-    # drone.move("left", 300)
-    # drone.move("back", 60)
+    drone.move("left", 300)
+    drone.move("back", 60)
 
-    ## 6: See the marker and land.
+    # 6: See the marker and land.
     # correctAngle(drone, 6)
     see(drone, 6)
     drone.send_rc_control(0, 0, 0, 0)
@@ -350,5 +355,5 @@ if __name__ == '__main__':
     # teleop(drone)
     # see(drone, 1)
     # print("done")
-    # auto(drone)
-    test(drone)
+    auto(drone)
+    # test(drone)
