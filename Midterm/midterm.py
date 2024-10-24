@@ -243,9 +243,15 @@ def see(drone, markId):
                     
                     drone.send_rc_control(0, zv, yv, rv)
             elif abs(x_err) <= error[markId][0] and abs(y_err) <= error[markId][1] and abs(z_err) <= error[markId][2]:
-                print("Saw marker", markId)
-                return
+                if markId == 6 and counter < 30:
+                    counter = counter + 1
+                    continue
+                else:
+                    print("Saw marker", markId)
+                    return
             else: 
+                if markId == 6:
+                    counter = 0
                 if markId == 4 or markId == 5:
                     drone.send_rc_control(xv, int(zv/2.5), yv, rv)
                 else:
