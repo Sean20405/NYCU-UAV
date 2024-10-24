@@ -123,6 +123,11 @@ def see(drone, markId):
         if key != -1:
             keyboard(drone, key)
         elif markerIds is not None:
+            # See 4 and not see 1     ### TODO: TESTTTTTT
+            markerIds_flatten = markerIds.flatten()
+            if 0 not in markerIds_flatten and 4 in markerIds_flatten:
+                return
+
             # Find the index of markId in markerIds
             target_idx = None
             for i, id in enumerate(markerIds):
@@ -231,6 +236,11 @@ def auto(drone):
     drone.land()
     
 def test(drone):
+    see(drone, 0)
+
+    ## 4: Turn right 90 degrees and fly forward.
+    see(drone, 4)
+    drone.rotate_clockwise(90)
     ## 5: 
     see(drone, 5)
     drone.move("left", 300)
