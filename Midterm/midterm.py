@@ -10,10 +10,10 @@ error = {1: [50, 50, 10],
          3: [10, 10, 10], 
          4: [10, 10, 10], 
          5: [20, 20, 10], 
-         6: [2, 10, 5]}
+         6: [5, 10, 5]}
 
 y_dist = {0: 10, 1: 10, 2: 10, 3: 10, 4: 10, 5: 10, 6: 20}
-z_dist = {0: 75, 1: 75, 2: 75, 3: 75, 4: 120, 5: 75, 6: 240}
+z_dist = {0: 75, 1: 75, 2: 75, 3: 75, 4: 120, 5: 75, 6: 160}
 yaw_range = 2
 
 def keyboard(self, key):
@@ -156,6 +156,7 @@ def correctAngle(drone, markId):
             drone.send_rc_control(0, 0, 0, 0)
 
 def see(drone, markId):
+    counter = 0
     frame_read = drone.get_frame_read()
 
     dictionary = cv2.aruco.Dictionary_get(cv2.aruco.DICT_4X4_250)
@@ -228,6 +229,7 @@ def see(drone, markId):
             yaw_err = yaw_pid.update(deg, sleep=0)
 
             print("errs:", x_err, y_err, z_err, yaw_err)
+            print(counter)
             
             xv = int(mss(x_err*2))
             yv = int(mss(y_err))
@@ -254,6 +256,8 @@ def see(drone, markId):
                     counter = 0
                 if markId == 4 or markId == 5:
                     drone.send_rc_control(xv, int(zv/2.5), yv, rv)
+                elif markId == 6:
+                    drone.send_rc_control(xv, zv//2, yv, rv // 2)
                 else:
                     drone.send_rc_control(xv, zv//2, yv, 0)
         else:
@@ -329,7 +333,7 @@ def test(drone):
     # drone.move("back", 60)
 
     ## 6: See the marker and land.
-    correctAngle(drone, 6)
+    # correctAngle(drone, 6)
     see(drone, 6)
     drone.send_rc_control(0, 0, 0, 0)
     # drone.move("back", 80)
