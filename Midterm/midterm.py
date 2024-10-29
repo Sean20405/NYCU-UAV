@@ -5,15 +5,15 @@ import cv2
 import numpy as np
 import math
 
-error = {1: [50, 50, 10],
-         2: [50, 50, 10],
+error = {1: [30, 30, 10],
+         2: [30, 30, 10],
          3: [10, 10, 10], 
          4: [10, 10, 10], 
          5: [20, 20, 10], 
-         6: [10, 50, 10]}
+         6: [5, 50, 15]}
 
 y_dist = {0: 10, 1: 10, 2: 10, 3: 10, 4: 10, 5: 10, 6: 20}
-z_dist = {0: 75, 1: 75, 2: 75, 3: 75, 4: 75, 5: 75, 6: 155}
+z_dist = {0: 60, 1: 75, 2: 65, 3: 75, 4: 75, 5: 75, 6: 165}
 yaw_range = 2
 
 def keyboard(self, key):
@@ -183,9 +183,13 @@ def see(drone, markId):
         
         frame = cv2.aruco.drawDetectedMarkers(frame, markerCorners, markerIds)
 
-        cv2.imshow('frame', cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
+        frame = cv2.putText(frame, text=f'battery: {drone.get_battery()}%', org=(800, 30), fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=0.7, color=(0, 255, 255), thickness=1)
+
+        
         key = cv2.waitKey(33)
         if key != -1:
+            cv2.imshow('frame', cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
+            cv2.waitKey(33)
             keyboard(drone, key)
         elif markerIds is not None:
             # See 4 and not see 1     ### TODO: TESTTTTTT
@@ -213,6 +217,9 @@ def see(drone, markId):
             deg = rad / math.pi * 180
             # print(deg)
 
+            for i in range(len(rvec)):
+                frame = cv2.aruco.drawAxis(frame, intrinsic, distortion, rvec[i], tvec[i], 7)
+
             cv2.putText(frame, text=f'x: {round(x_err, 2)}  y: {round(y_err, 2)}  z: {round(z_err, 2)} yaw: {round(deg, 2)}', fontFace=cv2.FONT_HERSHEY_SIMPLEX, 
                 fontScale=0.8, org=(20, 20), color=(0, 255, 255), thickness=1)
 
@@ -222,8 +229,6 @@ def see(drone, markId):
             x_err = x_err
             y_err = - (y_err + y_dist[markId]) * 2
 
-            
-            
             x_err = x_pid.update(x_err, sleep=0)
             y_err = y_pid.update(y_err, sleep=0)
             z_err = z_pid.update(z_err, sleep=0)
@@ -242,14 +247,16 @@ def see(drone, markId):
                 if hasMarker(markerIds, 4):
                     return
                 else:
-                    zv = zv // 2 if zv < 0 else int(zv / 2.5)
+                    zv = int(zv) if zv < 0 else int(zv / 1.5)
                     
                     drone.send_rc_control(0, zv, yv, rv)
             elif abs(x_err) <= error[markId][0] and abs(y_err) <= error[markId][1] and abs(z_err) <= error[markId][2]:
                 if markId == 4 or markId == 5 or markId == 6:
-                    if abs(yaw_err) > 5:
+                    if abs(yaw_err) > 7:
+                        counter = 0
+                        drone.send_rc_control(xv, zv//2, yv, rv // 2)
                         continue
-                if markId == 6 and counter < 10:
+                if markId == 6 and counter < 5:
                     counter = counter + 1
                     continue
                 else:
@@ -258,6 +265,7 @@ def see(drone, markId):
             else: 
                 if markId == 6:
                     counter = 0
+                    
                 if markId == 4 or markId == 5:
                     drone.send_rc_control(xv, int(zv/2.5), yv, rv)
                 elif markId == 6:
@@ -265,6 +273,8 @@ def see(drone, markId):
                 else:
                     drone.send_rc_control(xv, zv//2, yv, 0)
         else:
+            cv2.imshow('frame', cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
+            cv2.waitKey(33)
             if markId == 2: # 看不到 Marker2 的話，往下飛
                 drone.send_rc_control(0, -3, 0, 0)
             else:
@@ -290,10 +300,11 @@ def auto(drone):
     ## 1
     see(drone, 1)
     # drone.land()
-    drone.move("right", 80)
+    drone.move("right", 70)
+    drone.move("forward", 70)
     see(drone, 2)
     drone.move("left", 90)
-    drone.move("forward", 70)
+    drone.move("forward", 90)
 
     ## 2: Go down and pass under the table.
     drone.move("down", 50)
@@ -303,6 +314,7 @@ def auto(drone):
 
     ## 3: Follow the marker
     see(drone, 0)
+    print("DONE SEEING 0")
 
     ## 4: Turn right 90 degrees and fly forward.
     see(drone, 4)
@@ -311,38 +323,42 @@ def auto(drone):
     drone.rotate_clockwise(90)
     ## 5: 
     see(drone, 5)
-    # correctAngle(drone, 5)
-    drone.move("left", 300)
-    drone.move("back", 60)
+    # correctAngle(drone, 5()
+    drone.move("left", 285)
+    drone.move("back", 100)
 
     # 6: See the marker and land.
-    # correctAngle(drone, 6)
     see(drone, 6)
-    drone.send_rc_control(0, 0, 0, 0)
-    # drone.move("back", 80)
+    for _ in range(5):
+        drone.send_rc_control(0, 0, 0, 0)
+        cv2.waitKey(10)
+
     drone.land()
     
 def test(drone):
-    # see(drone, 0)
-    # print("DONE SEEING 0")
+    see(drone, 0)
+    print("DONE SEEING 0")
 
-    ## 4: Turn right 90 degrees and fly forward.
-    see(drone, 4)
-    print("DONE SEEING 4")
-    # correctAngle(drone, 4)
-    drone.rotate_clockwise(90)
-    ## 5: 
-    see(drone, 5)
-    # correctAngle(drone, 5)
-    drone.move("left", 300)
-    drone.move("back", 60)
+    # ## 4: Turn right 90 degrees and fly forward.
+    # see(drone, 4)
+    # print("DONE SEEING 4")
+    # # correctAngle(drone, 4)
+    # drone.rotate_clockwise(90)
+    # ## 5: 
+    # see(drone, 5)
+    # # correctAngle(drone, 5)
+    # drone.move("left", 270)
+    # drone.move("back", 100)
 
-    # 6: See the marker and land.
-    # correctAngle(drone, 6)
-    see(drone, 6)
-    drone.send_rc_control(0, 0, 0, 0)
-    # drone.move("back", 80)
-    drone.land()
+    # # 6: See the marker and land.
+    # # correctAngle(drone, 6)
+    # see(drone, 6)
+    # for _ in range(5):
+    #     drone.send_rc_control(0, 0, 0, 0)
+    #     cv2.waitKey(10)
+
+    # # drone.move("back", 80)
+    # drone.land()
 
 if __name__ == '__main__':
     drone = Tello()
