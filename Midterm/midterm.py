@@ -271,7 +271,7 @@ def see(drone, markId):
                 elif markId == 6:
                     drone.send_rc_control(xv, zv//2, yv, rv // 2)
                 else:
-                    drone.send_rc_control(xv, zv//2, yv, 0)
+                    drone.send_rc_control(xv, int(zv/1.5), yv, 0)
         else:
             cv2.imshow('frame', cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
             cv2.waitKey(33)
@@ -300,7 +300,7 @@ def auto(drone):
     ## 1
     see(drone, 1)
     # drone.land()
-    drone.move("right", 70)
+    drone.move("right", 80)
     drone.move("forward", 70)
     see(drone, 2)
     drone.move("left", 90)
