@@ -58,10 +58,17 @@ def line_follower(frame):
 
     return [tl, tm, tr, ml, mm, mr, bl, bm, br]
 
-def put_detected_square(frame, detected_squares):
+def put_detected_square(frame, detected_squares, is_gray):
     height, width = 0, 0
-    # (height, width, _) = frame.shape
-    height, width = frame.shape
+    if is_gray:
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        gray = cv2.GaussianBlur(gray, (5, 5), 0)
+        _, gray = cv2.threshold(gray, 127, 255, cv2.THRESH_BINARY)
+        height, width = gray.shape
+        frame = gray
+    else:
+        (height, width, _) = frame.shape
+
     w_mid = int(width/2)
     h_mid = int(height/2)
 
@@ -93,9 +100,9 @@ def trace_line(drone, speed_output, target_square):
 
         detected_squares = line_follower(gray)
 
-        frame = cv2.putText(gray, text=f'battery: {drone.get_battery()}%', org=(800, 30), fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=0.7, color=(0, 255, 255), thickness=1)
-        frame = put_detected_square(gray, detected_squares)
-        cv2.imshow("drone", gray)
+        frame = cv2.putText(frame, text=f'battery: {drone.get_battery()}%', org=(800, 30), fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=0.7, color=(0, 255, 255), thickness=1)
+        frame = put_detected_square(frame, detected_squares, True)
+        cv2.imshow("drone", frame)
         key = cv2.waitKey(50)
         if key != -1:
             keyboard(drone, key)
@@ -214,13 +221,13 @@ if __name__ == '__main__':
         detected_squares = line_follower(gray)
 
 
-        # frame = cv2.putText(frame, text=f'battery: {drone.get_battery()}%', org=(800, 30), fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=0.7, color=(0, 255, 255), thickness=1)
-        # frame = put_detected_square(frame, detected_squares)
-        # cv2.imshow("drone", frame)
+        frame = cv2.putText(frame, text=f'battery: {drone.get_battery()}%', org=(800, 30), fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=0.7, color=(0, 255, 255), thickness=1)
+        frame = put_detected_square(frame, detected_squares, True)
+        cv2.imshow("drone", frame)
 
-        frame = cv2.putText(gray, text=f'battery: {drone.get_battery()}%', org=(800, 30), fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=0.7, color=(0, 255, 255), thickness=1)
-        frame = put_detected_square(gray, detected_squares)
-        cv2.imshow("drone", gray)
+        # frame = cv2.putText(gray, text=f'battery: {drone.get_battery()}%', org=(800, 30), fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=0.7, color=(0, 255, 255), thickness=1)
+        # frame = put_detected_square(gray, detected_squares)
+        # cv2.imshow("drone", gray)
 
         # print(frame)
         # print(frame.shape.len)

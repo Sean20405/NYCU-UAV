@@ -88,15 +88,19 @@ def line_follower(frame):
 
     return [tl, tm, tr, ml, mm, mr, bl, bm, br]
 
-def put_detected_square(frame, detected_squares):
+def put_detected_square(frame, detected_squares, is_gray):
     height, width = 0, 0
-    # (height, width, _) = frame.shape
-    height, width = frame.shape
+    if is_gray:
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        gray = cv2.GaussianBlur(gray, (5, 5), 0)
+        _, gray = cv2.threshold(gray, 127, 255, cv2.THRESH_BINARY)
+        height, width = gray.shape
+        frame = gray
+    else:
+        (height, width, _) = frame.shape
+
     w_mid = int(width/2)
     h_mid = int(height/2)
-
-    x_list = [10,w_mid,width-100]
-    y_list = [10,h_mid,height-10]
 
     x_list = [10,w_mid,width-100]
     y_list = [10,h_mid,height-10]
@@ -119,14 +123,13 @@ def put_detected_square(frame, detected_squares):
 cap = cv2.VideoCapture(0)
 while True:
     ret, frame = cap.read()
-    frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     gray = cv2.GaussianBlur(gray, (5, 5), 0)
     _, gray = cv2.threshold(gray, 127, 255, cv2.THRESH_BINARY)
     detected_squares = line_follower(gray)
         
-    frame = put_detected_square(gray, detected_squares)
-    cv2.imshow("drone", gray)
+    frame = put_detected_square(frame, detected_squares, False)
+    cv2.imshow("drone", frame)
 
     # print(frame)
     # print(frame.shape.len)
