@@ -13,54 +13,48 @@ sq = {
 
 def line_follower(frame):
     height, width = frame.shape
+    width_1_4 = int(width/4)
     width_mid = int(width/2)
-    height_mid = int(height/2)
+    width_3_4 = 3 * width_1_4
+    height_1_4 = int(height/4)
     threshold = 0.2
     tl = tm = tr = ml = mm = mr = bl = bm = br = 0
 
-    h_top, h_mid, h_bottom = 0, 0, 0
     for i in range(height):
         for j in range(width_mid-3, width_mid):
             if frame[i, j] == 0:
                 if(i < height/3):
-                    h_top += 1
+                    tm += 1
                 elif(i < height/3*2):
-                    h_mid += 1
+                    mm += 1
                 else:
-                    h_bottom += 1
-
-    w_left, w_mid, w_right = 0, 0, 0
-    for i in range(width):
-        for j in range(height_mid-3, height_mid):
-            if frame[j, i] == 0:
-                if(i < width/3):
-                    w_left += 1
-                elif(i < width/3*2):
-                    w_mid += 1
+                    bm += 1
+        for j in range(width_1_4-3, width_1_4):
+            if frame[i, j] == 0:
+                if(i < height/3):
+                    tl += 1
+                elif(i < height/3*2):
+                    ml += 1
                 else:
-                    w_right += 1
+                    bl += 1
+        for j in range(width_3_4-3, width_3_4):
+            if frame[i, j] == 0:
+                if(i < height/3):
+                    tr += 1
+                elif(i < height/3*2):
+                    mr += 1
+                else:
+                    br += 1
 
-    if h_top > height * 3 * threshold * 0.333:
-        if w_left > width * 3 * threshold * 0.333:
-            tl = 1
-        if w_mid > width * 3 * threshold * 0.333:
-            tm = 1
-        if w_right > width * 3 * threshold * 0.333:
-            tr = 1
-    if h_mid > height * 3 * threshold * 0.333:
-        if w_left > width * 3 * threshold * 0.333:
-            ml = 1
-        if w_mid > width * 3 * threshold * 0.333:
-            mm = 1
-        if w_right > width * 3 * threshold * 0.333:
-            mr = 1
-    if h_bottom > height * 3 * threshold * 0.333:
-        if w_left > width * 3 * threshold * 0.333:
-            bl = 1
-        if w_mid > width * 3 * threshold * 0.333:
-            bm = 1
-        if w_right > width * 3 * threshold * 0.333:
-            br = 1
+    tl = 1 if tl > height * threshold else 0
+    tm = 1 if tm > height * threshold else 0
+    tr = 1 if tr > height * threshold else 0
+    ml = 1 if ml > height * threshold else 0
+    mm = 1 if mm > height * threshold else 0
+    mr = 1 if mr > height * threshold else 0
+    bl = 1 if bl > height * threshold else 0
+    bm = 1 if bm > height * threshold else 0
+    br = 1 if br > height * threshold else 0
 
     return [tl, tm, tr, ml, mm, mr, bl, bm, br]
 
