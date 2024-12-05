@@ -5,12 +5,12 @@ from numpy import random
 import cv2
 import torch
 from torchvision import transforms
-from models.experimental import attempt_load
-from utils.datasets import letterbox
-from utils.general import non_max_suppression_kpt, scale_coords
-from utils.plots import  plot_one_box
+from .models.experimental import attempt_load
+from .utils.datasets import letterbox
+from .utils.general import non_max_suppression_kpt, scale_coords
+from .utils.plots import  plot_one_box
 
-WEIGHT = 'weights/best.pt'
+WEIGHT = 'utils/yolov7/weights/best.pt'
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 model = attempt_load(WEIGHT, map_location=device)
@@ -57,7 +57,3 @@ def detect_objects():
         elif "melody" in detected_objects:
             return "melody"
     return None
-
-if __name__ == "__main__":
-    doll_label = detect_objects()
-    print(doll_label)

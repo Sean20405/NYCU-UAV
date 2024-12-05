@@ -6,6 +6,7 @@ from djitellopy import Tello
 from utils.pyimagesearch.pid import PID
 from utils.keyboard_djitellopy import keyboard
 from utils.face_detection import see_face
+from utils.yolov7 import object_detection
 
 
 black_thres = 30
@@ -13,6 +14,9 @@ black_thres = 30
 sq = {
     "tl":0, "tm":1, "tr":2, "ml":3, "mm":4, "mr":5, "bl":6, "bm":7, "br":8
 }
+
+
+face_cascade = cv2.CascadeClassifier('utils/haarcascade_frontalface_default.xml')
 
 def square_same(input, truth):
     for i in range(9):
@@ -142,7 +146,7 @@ def see(drone, markId):
     dictionary = cv2.aruco.Dictionary_get(cv2.aruco.DICT_4X4_250)
     parameters = cv2.aruco.DetectorParameters_create()
 
-    fs = cv2.FileStorage("calibrate.xml", cv2.FILE_STORAGE_READ)
+    fs = cv2.FileStorage("utils/calibrate.xml", cv2.FILE_STORAGE_READ)
     intrinsic = fs.getNode("intrinsic").mat()
     distortion = fs.getNode("distortion").mat()
 
@@ -222,14 +226,16 @@ if __name__ == '__main__':
     drone = Tello()
     drone.connect()
     drone.streamon()
-    
-    see_face(drone)
-    drone.move("up", 50)
-    drone.move("forward", 50)
-    drone.move("down", 100)
-    see_face(drone)
-    drone.move("down", 50)
-    drone.move("forward", 150)
-    
+    # drone.takeoff()
+    # time.sleep(5)
+    # see_face(drone, face_cascade)
+    # drone.move("up", 75)
+    # drone.move("forward", 130)
+    # drone.move("down", 130)
+    # see_face(drone, face_cascade)
+    # drone.move("down", 70)
+    # drone.move("forward", 180)
+    detected_doll = object_detection()
+    print(detected_doll)
     drone.land()
     

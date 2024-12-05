@@ -1,16 +1,14 @@
 import cv2
 import numpy as np
-from pyimagesearch.pid import PID
-from keyboard_djitellopy import keyboard
+from .pyimagesearch.pid import PID
+from .keyboard_djitellopy import keyboard
 import math
+from djitellopy import Tello
 
 # Object point
 face_x = 15
 face_y = 15
 
-hog = cv2.HOGDescriptor()
-hog.setSVMDetector(cv2.HOGDescriptor_getDefaultPeopleDetector())
-face_cascade = cv2.CascadeClassifier('../haarcascade_frontalface_default.xml')
 
 def mss(update, max_speed_threshold=30):
     if update > max_speed_threshold:
@@ -20,9 +18,10 @@ def mss(update, max_speed_threshold=30):
 
     return update
 
-def see_face(drone):
+def see_face(drone, face_cascade ):
+    tvec = None
     frame_read = drone.get_frame_read()
-    fs = cv2.FileStorage("calibrate.xml", cv2.FILE_STORAGE_READ)
+    fs = cv2.FileStorage("utils/calibrate.xml", cv2.FILE_STORAGE_READ)
     intrinsic = fs.getNode("intrinsic").mat()
     distortion = fs.getNode("distortion").mat()
 
@@ -38,10 +37,13 @@ def see_face(drone):
 
     while True:
         frame = frame_read.frame
+        # print(frame)
+        if frame.sum() == 0:
+            continue
         
         face_rects = face_cascade.detectMultiScale(frame, 
                                                scaleFactor=1.06,
-                                               minNeighbors=5,
+                                               minNeighbors=20,
                                                minSize=(60, 60))
         
         for (x, y, w, h) in face_rects:
@@ -52,12 +54,12 @@ def see_face(drone):
             cv2.putText(frame, f'{tvec[2][0]}', (x, y-10), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
 
         cv2.imshow('drone', frame)
-        key = cv2.waitKey(33)
+        key = cv2.waitKey(50)
         if key != -1:
             keyboard(drone, key)
-        elif face_rects is not None:
+        elif face_rects is not None and tvec is not None:
             (x_err, y_err, z_err) = tvec[:,0]
-            z_err = z_err - 50
+            z_err = z_err - 30
             x_err = x_err * 2
             y_err = - (y_err + 10) * 2
 
@@ -81,11 +83,19 @@ def see_face(drone):
             zv = mss(z_err)
             rv = mss(yaw_err)
             # print(xv, yv, zv, rv)
-            # drone.send_rc_control(min(20, int(xv//2)), min(20, int(zv//2)), min(20, int(yv//2)), 0)
+            drone.send_rc_control(min(20, int(xv//2)), min(20, int(zv//2)), min(20, int(yv//2)), 0)
             if abs(z_err) <= 10 and abs(y_err) <= 50 and abs(x_err) <= 50:
                 print("Saw face!")
                 return
             else: 
                 drone.send_rc_control(int(xv), int(zv//2), int(yv), 0)
+                # print(xv, (zv//2), yv)
         else:
             drone.send_rc_control(0, 0, 0, 0)
+
+# if __name__ == '__main__':
+#     drone = Tello()
+#     drone.connect()
+#     drone.streamon()
+    
+#     see_face(drone)
