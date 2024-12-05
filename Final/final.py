@@ -119,16 +119,15 @@ def trace_line(drone, speed_output, target_square, horizontal_trace):
             drone.send_rc_control(0,-5,0,0)
         else:
             if horizontal_trace and detected_squares[:3] == [1,1,1]:
-                drone.send_rc_control(0,0,5,0)
+                ud += 5
             elif horizontal_trace and  detected_squares[-3:] == [1,1,1]:
-                drone.send_rc_control(0,0,-5,0)
+                ud -= 5
             elif not horizontal_trace and detected_squares[::3] == [1,1,1]:
-                drone.send_rc_control(-5,0,0,0)
+                lr -= 5
             elif not horizontal_trace and detected_squares[2::3] == [1,1,1]:
-                drone.send_rc_control(5,0,0,0)
-            else:
-                lr, fb, ud, rot = speed_output
-                drone.send_rc_control(lr, fb, ud, rot)
+                lr += 5
+            lr, fb, ud, rot = speed_output
+            drone.send_rc_control(lr, fb, ud, rot)
     drone.send_rc_control(0,0,0,0)
 
 def mss(update, max_speed_threshold=30):
@@ -146,7 +145,7 @@ def see(drone, markId):
     dictionary = cv2.aruco.Dictionary_get(cv2.aruco.DICT_4X4_250)
     parameters = cv2.aruco.DetectorParameters_create()
 
-    fs = cv2.FileStorage("utils/calibrate.xml", cv2.FILE_STORAGE_READ)
+    fs = cv2.FileStorage("calibrate.xml", cv2.FILE_STORAGE_READ)
     intrinsic = fs.getNode("intrinsic").mat()
     distortion = fs.getNode("distortion").mat()
 
