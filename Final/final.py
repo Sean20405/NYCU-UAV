@@ -263,26 +263,45 @@ if __name__ == '__main__':
         trace_line(drone, (-20,0,0,0), [0,0,0,0,1,1,0,0,0], True)
         print("9 corner")
     else:
+        print("Moving up!")
         trace_line(drone, [0,0,15,0], [0,0,0,1,1,0,0,1,0], False)
-        print("1 corner")
+        print("1 corner detected")
+
+        print("Moving left!")
         trace_line(drone, [-20,0,0,0], [0,1,0,1,1,1,0,0,0], True)
-        print("2 corner")
+        print("2 corner detected")
+
+        print("Moving up!")
         trace_line(drone, (0,0,20,0), [0,0,0,1,1,0,0,1,0], False)
-        print("3 corner")
+        print("3 corner detected")
+
+        print("Moving left!")
         trace_line(drone, (-20,0,0,0), [0,0,0,0,1,1,0,1,0], True)
-        print("4 corner")
+        print("4 corner detected")
+
+        print("Moving down!")
         trace_line(drone, (0,0,-20,0), [0,1,0,1,1,1,0,0,0], False)
-        print("5 corner")
+        print("5 corner detected")
+
+        print("Moving left!")
         trace_line(drone, (-20,0,0,0), [0,0,0,0,1,1,0,0,0], True)
-        print("6 corner")
+        print("6 corner detected")
+
+        print("Moving down!")
         trace_line(drone, [0,0,-10,0], [0,1,0,1,1,0,0,0,0], False)
-        print("7 corner")
+        print("7 corner detected")
+
+        print("Moving left! Going through the table")
         trace_line(drone, [-20,0,0,0], [0,1,0,0,1,1,0,0,0], True)
-        print("8 corner")
+        print("8 corner detected")
+
+        print("Moving up!")
         trace_line(drone, [0,0,15,0], [0,0,0,1,1,0,0,1,0], False)
-        print("9 corner")
+        print("9 corner detected")
+
+        print("Moving left!")
         trace_line(drone, (-25,0,0,0), [0,0,0,0,1,1,0,0,0], True)
-        print("10 corner")
+        print("10 corner detected")
     
     drone.land()
     
