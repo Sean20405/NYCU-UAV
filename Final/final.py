@@ -226,10 +226,9 @@ if __name__ == '__main__':
     drone = Tello()
     drone.connect()
     drone.streamon()
+    drone.takeoff()
     
     # 1. 飛到人臉前，飛過板子，看到第二張人臉，飛過桌子底下
-    drone.takeoff()
-    time.sleep(5)
     see_face(drone, face_cascade)
     drone.move("up", 75)
     drone.move("forward", 130)
@@ -240,8 +239,9 @@ if __name__ == '__main__':
 
     # 2. 偵測娃娃，開始循線
     detected_doll = detect_objects(drone)
+    drone.move("up", 50)
     see(drone, 1)
-    if detected_doll == "carna":
+    if detected_doll == "Kanahei":
         trace_line(drone, [0,0,15,0], [0,0,0,1,1,0,0,1,0], False)
         print("1 corner")
         trace_line(drone, [-20,0,0,0], [0,0,0,0,1,1,0,1,0], True)

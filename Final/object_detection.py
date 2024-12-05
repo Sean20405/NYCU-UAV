@@ -52,7 +52,7 @@ def detect_objects(drone):
         cv2.waitKey(1)
 
         if "carna" in detected_objects:
-            return "carna"
+            return "Kanahei"
         elif "melody" in detected_objects:
-            return "melody"
+            return "Melody"
     return None
