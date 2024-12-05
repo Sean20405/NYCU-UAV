@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
-from .pyimagesearch.pid import PID
-from .keyboard_djitellopy import keyboard
+from pyimagesearch.pid import PID
+from keyboard_djitellopy import keyboard
 import math
 from djitellopy import Tello
 
@@ -21,7 +21,7 @@ def mss(update, max_speed_threshold=30):
 def see_face(drone, face_cascade ):
     tvec = None
     frame_read = drone.get_frame_read()
-    fs = cv2.FileStorage("utils/calibrate.xml", cv2.FILE_STORAGE_READ)
+    fs = cv2.FileStorage("calibrate.xml", cv2.FILE_STORAGE_READ)
     intrinsic = fs.getNode("intrinsic").mat()
     distortion = fs.getNode("distortion").mat()
 

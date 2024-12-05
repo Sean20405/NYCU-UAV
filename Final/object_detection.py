@@ -5,12 +5,14 @@ from numpy import random
 import cv2
 import torch
 from torchvision import transforms
-from .models.experimental import attempt_load
-from .utils.datasets import letterbox
-from .utils.general import non_max_suppression_kpt, scale_coords
-from .utils.plots import  plot_one_box
-
-WEIGHT = 'utils/yolov7/weights/best.pt'
+from models.experimental import attempt_load
+from utils.datasets import letterbox
+from utils.general import non_max_suppression_kpt, scale_coords
+from utils.plots import plot_one_box
+# import sys
+# import os
+# sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+WEIGHT = 'best.pt'
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 model = attempt_load(WEIGHT, map_location=device)
@@ -24,13 +26,10 @@ colors = [[random.randint(0, 255) for _ in range(3)] for _ in names]
 # Define the codec and create VideoWriter object
 fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # or 'XVID' for .avi
 
-cap = cv2.VideoCapture(1)
-def detect_objects():
+def detect_objects(drone):
     # frame = drone.get_frame_read().frame
     while True:         
-        ret, frame = cap.read()
-        if not ret:
-            break
+        frame = drone.get_frame_read().frame
         image_orig = frame.copy()
         image = letterbox(frame, (640, 640), stride=64, auto=True)[0]
         if device == "cuda":

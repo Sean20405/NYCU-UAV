@@ -3,10 +3,10 @@ import numpy as np
 import time
 import math
 from djitellopy import Tello
-from utils.pyimagesearch.pid import PID
-from utils.keyboard_djitellopy import keyboard
-from utils.face_detection import see_face
-from utils.yolov7 import object_detection
+from pyimagesearch.pid import PID
+from keyboard_djitellopy import keyboard
+from face_detection import see_face
+from object_detection import detect_objects
 
 
 black_thres = 30
@@ -16,7 +16,7 @@ sq = {
 }
 
 
-face_cascade = cv2.CascadeClassifier('utils/haarcascade_frontalface_default.xml')
+face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
 
 def square_same(input, truth):
     for i in range(9):
@@ -235,7 +235,7 @@ if __name__ == '__main__':
     # see_face(drone, face_cascade)
     # drone.move("down", 70)
     # drone.move("forward", 180)
-    detected_doll = object_detection()
+    detected_doll = detect_objects(drone)
     print(detected_doll)
     drone.land()
     
