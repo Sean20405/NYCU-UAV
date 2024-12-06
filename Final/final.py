@@ -125,7 +125,7 @@ def trace_line(drone, speed_output, target_square, horizontal_trace):
                 lr -= 5
             elif not horizontal_trace and detected_squares[2::3] == [1,1,1]:
                 lr += 5
-            fb += mss((0.3 - black_ratio) * 10, 20)
+            fb += int(mss((0.3 - black_ratio) * 10, 20))
             drone.send_rc_control(lr, fb, ud, rot)
     drone.send_rc_control(0,0,0,0)
 
