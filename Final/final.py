@@ -221,6 +221,119 @@ def see(drone, markId):
             else:
                 drone.send_rc_control(0, 0, 0, 0)
 
+# See the multiple markers with the same markId (using x coor to compare), follow the nearest one 
+def see_multi(drone, markId):
+    # frame_read = drone.get_frame_read()
+    cap = cv2.VideoCapture(0)
+
+    dictionary = cv2.aruco.Dictionary_get(cv2.aruco.DICT_4X4_250)
+    dictionary = cv2.aruco.Dictionary_get(cv2.aruco.DICT_4X4_250)
+    parameters = cv2.aruco.DetectorParameters_create()
+
+    fs = cv2.FileStorage("calibrate.xml", cv2.FILE_STORAGE_READ)
+    intrinsic = fs.getNode("intrinsic").mat()
+    distortion = fs.getNode("distortion").mat()
+
+    z_pid = PID(kP=0.7, kI=0.0001, kD=0.1)
+    y_pid = PID(kP=0.7, kI=0.0001, kD=0.1)
+    x_pid = PID(kP=0.7, kI=0.0001, kD=0.1)
+    yaw_pid = PID(kP=0.7, kI=0.0001, kD=0.1)
+
+    z_pid.initialize()
+    y_pid.initialize()
+    x_pid.initialize()
+    yaw_pid.initialize()
+
+    while True:
+        # frame = frame_read.frame
+        ret, frame = cap.read()
+        markerCorners, markerIds, rejectedCandidates = cv2.aruco.detectMarkers(frame, dictionary, parameters=parameters)
+        print(markerIds)
+        
+        frame = cv2.aruco.drawDetectedMarkers(frame, markerCorners, markerIds)
+
+        key = cv2.waitKey(33)
+        if key != -1:
+            keyboard(drone, key)
+
+        elif markerIds is not None:
+            # Find the index of markId in markerIds
+            target_idxes = []
+            for i, id in enumerate(markerIds):
+                if id[0] == markId:
+                    target_idxes.append(i)
+                    
+            if not target_idxes:  # No target found
+                continue
+
+            rvec, tvec, _objPoints = cv2.aruco.estimatePoseSingleMarkers(markerCorners, 15, intrinsic, distortion)
+
+            # Find the nearest marker and follow it
+            target_idx = target_idxes[0]
+            if type(target_idxes) == list:
+                min_x_dist = float('Inf')
+                for idx in target_idxes:
+                    x_err = abs(tvec[idx][0][0])  ### TODO: calibration or using distance
+                    if x_err < min_x_dist:
+                        min_x_dist = x_err
+                        target_idx = idx
+                    
+                    # Put x_err of each marker on the frame
+                    text_coor = (np.sum(markerCorners[idx][0], axis=0) / 4).tolist()
+                    text_coor = tuple([int(i) for i in text_coor])
+                    text_coor = (text_coor[0], text_coor[1] + 25 * (i+1))
+                    print(text_coor)    
+                    cv2.putText(frame, text=f'idx: {idx}, x_err: {round(x_err, 2)}',
+                                fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=0.4, 
+                                org=text_coor, color=(0, 255, 0), thickness=1)
+
+            # Display the nearest marker
+            frame = cv2.aruco.drawAxis(frame, intrinsic, distortion, rvec[target_idx], tvec[target_idx], 7)
+
+            (x_err, y_err, z_err) = tvec[target_idx][0]
+            z_err = z_err - 50
+            x_err = x_err * 2
+            y_err = - (y_err + 10) * 2
+
+            R, err = cv2.Rodrigues(np.array([rvec[target_idx]]))
+            # print("err:", err)
+            V = np.matmul(R, [0, 0, 1])
+            rad = math.atan(V[0]/V[2])
+            deg = rad / math.pi * 180
+            # print(deg)
+            yaw_err = yaw_pid.update(deg, sleep=0)
+            
+            x_err = x_pid.update(x_err, sleep=0)
+            y_err = y_pid.update(y_err, sleep=0)
+            z_err = z_pid.update(z_err, sleep=0)
+            yaw_err = yaw_pid.update(yaw_err, sleep=0)
+
+            print("errs:", x_err, y_err, z_err, yaw_err)
+            
+            xv = mss(x_err)
+            yv = mss(y_err)
+            zv = mss(z_err)
+            rv = mss(yaw_err)
+            # print(xv, yv, zv, rv)
+            # drone.send_rc_control(min(20, int(xv//2)), min(20, int(zv//2)), min(20, int(yv//2)), 0)
+            if abs(z_err) <= 10 and abs(y_err) <= 50 and abs(x_err) <= 50:
+                print("Saw marker", markId)
+                cap.release()
+                cv2.destroyAllWindows()
+                return
+            else: 
+                # continue
+                # if abs(y_err) >= 10 or abs(x_err) >= 10:
+                #     drone.send_rc_control(int(xv), 0, int(yv), 0)
+                # else:
+                # drone.send_rc_control(int(xv), int(zv//2), int(yv), 0)
+                print("Send speed", xv, yv, zv, rv)
+        else:
+            # drone.send_rc_control(0, 0, 0, 0)
+            print("Send speed", 0, 0, 0, 0)
+
+        cv2.imshow('drone', frame)
+
 if __name__ == '__main__':
     drone = Tello()
     drone.connect()
