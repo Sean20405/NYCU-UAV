@@ -52,7 +52,9 @@ def detect_objects(drone):
         cv2.waitKey(1)
 
         if "carna" in detected_objects:
+            cv2.destroyAllWindows()
             return "Kanahei"
         elif "melody" in detected_objects:
+            cv2.destroyAllWindows()
             return "Melody"
     return None
