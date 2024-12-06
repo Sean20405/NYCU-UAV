@@ -42,7 +42,7 @@ def line_follower(frame):
     # 計算每個格子的總像素數
     total_pixels = (height//3) * (width//3)
     threshold = 0.1  # 可以調整這個閾值
-    back = False
+    max_ratio = 0
     # 遍歷每個九宮格
     for i, (h1, h2) in enumerate(zip(h_borders[:-1], h_borders[1:])):
         for j, (w1, w2) in enumerate(zip(w_borders[:-1], w_borders[1:])):
@@ -52,8 +52,7 @@ def line_follower(frame):
             black_pixels = np.sum(region == 0)
             # 計算黑色像素的比例
             black_ratio = black_pixels / total_pixels
-            if (black_ratio > 0.7):
-                back = True
+            max_ratio = max(max_ratio, black_ratio)
             
             # 根據位置設置對應的格子值
             pos = ['tl', 'tm', 'tr',
@@ -64,7 +63,7 @@ def line_follower(frame):
     # 返回結果列表，保持原有的順序
     return [squares['tl'], squares['tm'], squares['tr'],
             squares['ml'], squares['mm'], squares['mr'],
-            squares['bl'], squares['bm'], squares['br']], black_ratio
+            squares['bl'], squares['bm'], squares['br']], max_ratio
 
 def put_detected_square(frame, detected_squares, is_gray):
     height, width = 0, 0
@@ -107,7 +106,7 @@ def trace_line(drone, speed_output, target_square, horizontal_trace):
         _, gray = cv2.threshold(gray, black_thres, 255, cv2.THRESH_BINARY)
 
         detected_squares, black_ratio = line_follower(gray)
-
+        print(black_ratio)
         frame = cv2.putText(frame, text=f'battery: {drone.get_battery()}%', org=(600, 30), fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=0.7, color=(0, 255, 255), thickness=1)
         frame = put_detected_square(frame, detected_squares, True)
         cv2.imshow("drone", frame)
@@ -118,14 +117,14 @@ def trace_line(drone, speed_output, target_square, horizontal_trace):
         else:
             lr, fb, ud, rot = speed_output
             if horizontal_trace and detected_squares[:3] == [1,1,1]:
-                ud += 5
+                ud += 7
             elif horizontal_trace and  detected_squares[-3:] == [1,1,1]:
-                ud -= 5
+                ud -= 7
             elif not horizontal_trace and detected_squares[::3] == [1,1,1]:
-                lr -= 5
+                lr -= 7
             elif not horizontal_trace and detected_squares[2::3] == [1,1,1]:
-                lr += 5
-            fb += int(mss((0.3 - black_ratio) * 10, 20))
+                lr += 7
+            fb += int(mss((0.4 - black_ratio) * 60, 20)) 
             drone.send_rc_control(lr, fb, ud, rot)
     drone.send_rc_control(0,0,0,0)
 
@@ -214,7 +213,7 @@ def see(drone, markId):
                 # if abs(y_err) >= 10 or abs(x_err) >= 10:
                 #     drone.send_rc_control(int(xv), 0, int(yv), 0)
                 # else:
-                drone.send_rc_control(int(xv), int(zv//2), int(yv), 0)
+                drone.send_rc_control(int(xv), int(zv/1.5), int(yv), 0)
         else:
             if markId == 2:
                 drone.send_rc_control(0, 0, 0, 0)
@@ -334,7 +333,36 @@ def see_multi(drone, markId):
 
         cv2.imshow('drone', frame)
 
-if __name__ == '__main__':
+def test(drone):
+    print("Moving down!")
+    trace_line(drone, [0,0,-15,0], [1,1,0,0,0,0,0,0,0], False)
+    print("7 corner detected")
+
+    print("Moving left! Going through the table")
+    trace_line(drone, [-15,0,0,0], [0,1,0,0,1,1,0,0,0], False)
+    print("8 corner detected")
+
+    print("Moving up!")
+    trace_line(drone, [0,0,20,0], [0,0,0,1,1,0,0,1,0], False)
+    print("9 corner detected")
+
+    print("Moving left!")
+    trace_line(drone, (-20,0,0,0), [0,2,0,0,1,1,0,0,0], True)
+    print("10 corner detected")
+
+    drone.rotate_clockwise(180)
+    drone.move("forward", 100)
+    detected_doll = detect_objects(drone)
+    if detected_doll == "Kanahei":
+        drone.move("left", 50)
+    else:
+        drone.move("right", 50)
+    
+    drone.move("forward", 100)
+    see(drone, 3)
+    drone.land()
+
+def main():
     drone = Tello()
     drone.connect()
     drone.streamon()
@@ -381,7 +409,7 @@ if __name__ == '__main__':
         print("1 corner detected")
 
         print("Moving left!")
-        trace_line(drone, [-15,0,0,0], [2,1,0,1,1,1,0,0,0], True)
+        trace_line(drone, [-17,0,0,0], [2,1,0,1,1,1,0,0,0], True)
         print("2 corner detected")
 
         print("Moving up!")
@@ -389,7 +417,7 @@ if __name__ == '__main__':
         print("3 corner detected")
 
         print("Moving left!")
-        trace_line(drone, (-10,0,0,0), [0,0,0,0,1,1,0,1,0], True)
+        trace_line(drone, (-12,0,0,0), [0,2,2,0,1,1,0,1,2], True)
         print("4 corner detected")
 
         print("Moving down!")
@@ -401,7 +429,7 @@ if __name__ == '__main__':
         print("6 corner detected")
 
         print("Moving down!")
-        trace_line(drone, [0,0,-10,0], [0,1,0,1,1,0,0,0,0], False)
+        trace_line(drone, [0,0,-15,0], [0,1,0,1,1,0,0,0,0], False)
         print("7 corner detected")
 
         print("Moving left! Going through the table")
@@ -409,7 +437,7 @@ if __name__ == '__main__':
         print("8 corner detected")
 
         print("Moving up!")
-        trace_line(drone, [0,0,15,0], [0,0,0,1,1,0,0,1,0], False)
+        trace_line(drone, [0,0,20,0], [0,0,0,1,1,0,0,1,0], False)
         print("9 corner detected")
 
         print("Moving left!")
@@ -428,3 +456,9 @@ if __name__ == '__main__':
     see(drone, 3)
     drone.land()
     
+if __name__ == "__main__":
+    drone = Tello()
+    drone.connect()
+    drone.streamon()
+    drone.takeoff()
+    test(drone)
