@@ -64,7 +64,7 @@ def line_follower(frame):
     # 返回結果列表，保持原有的順序
     return [squares['tl'], squares['tm'], squares['tr'],
             squares['ml'], squares['mm'], squares['mr'],
-            squares['bl'], squares['bm'], squares['br']], back
+            squares['bl'], squares['bm'], squares['br']], black_ratio
 
 def put_detected_square(frame, detected_squares, is_gray):
     height, width = 0, 0
@@ -106,7 +106,7 @@ def trace_line(drone, speed_output, target_square, horizontal_trace):
         gray = cv2.GaussianBlur(gray, (5, 5), 0)
         _, gray = cv2.threshold(gray, black_thres, 255, cv2.THRESH_BINARY)
 
-        detected_squares, back = line_follower(gray)
+        detected_squares, black_ratio = line_follower(gray)
 
         frame = cv2.putText(frame, text=f'battery: {drone.get_battery()}%', org=(600, 30), fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=0.7, color=(0, 255, 255), thickness=1)
         frame = put_detected_square(frame, detected_squares, True)
@@ -115,9 +115,8 @@ def trace_line(drone, speed_output, target_square, horizontal_trace):
         key = cv2.waitKey(50)
         if key != -1:
             keyboard(drone, key)
-        elif back:
-            drone.send_rc_control(0,-5,0,0)
         else:
+            lr, fb, ud, rot = speed_output
             if horizontal_trace and detected_squares[:3] == [1,1,1]:
                 ud += 5
             elif horizontal_trace and  detected_squares[-3:] == [1,1,1]:
@@ -126,7 +125,7 @@ def trace_line(drone, speed_output, target_square, horizontal_trace):
                 lr -= 5
             elif not horizontal_trace and detected_squares[2::3] == [1,1,1]:
                 lr += 5
-            lr, fb, ud, rot = speed_output
+            ud += mss((0.3 - black_ratio) * 10, 20)
             drone.send_rc_control(lr, fb, ud, rot)
     drone.send_rc_control(0,0,0,0)
 
