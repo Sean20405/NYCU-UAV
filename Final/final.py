@@ -414,6 +414,16 @@ if __name__ == '__main__':
         print("Moving left!")
         trace_line(drone, (-25,0,0,0), [0,0,0,0,1,1,0,0,0], True)
         print("10 corner detected")
+
+    drone.rotate_clockwise(180)
+    drone.move("forward", 100)
+    detected_doll = detect_objects(drone)
+    if detected_doll == "Kanahei":
+        drone.move("left", 50)
+    else:
+        drone.move("right", 50)
     
+    drone.move("forward", 100)
+    see(drone, 3)
     drone.land()
     
