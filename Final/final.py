@@ -52,7 +52,7 @@ def line_follower(frame):
             black_pixels = np.sum(region == 0)
             # 計算黑色像素的比例
             black_ratio = black_pixels / total_pixels
-            if (black_ratio > 0.5):
+            if (black_ratio > 0.7):
                 back = True
             
             # 根據位置設置對應的格子值
@@ -181,6 +181,117 @@ def see(drone, markId):
 
             rvec, tvec, _objPoints = cv2.aruco.estimatePoseSingleMarkers(markerCorners, 15, intrinsic, distortion)
             (x_err, y_err, z_err) = tvec[target_idx][0]
+            z_err = z_err - 30
+            x_err = x_err * 2
+            y_err = - (y_err + 10) * 2
+
+            R, err = cv2.Rodrigues(np.array([rvec[target_idx]]))
+            # print("err:", err)
+            V = np.matmul(R, [0, 0, 1])
+            rad = math.atan(V[0]/V[2])
+            deg = rad / math.pi * 180
+            # print(deg)
+            yaw_err = yaw_pid.update(deg, sleep=0)
+            
+            x_err = x_pid.update(x_err, sleep=0)
+            y_err = y_pid.update(y_err, sleep=0)
+            z_err = z_pid.update(z_err, sleep=0)
+            yaw_err = yaw_pid.update(yaw_err, sleep=0)
+
+            print("errs:", x_err, y_err, z_err, yaw_err)
+            
+            xv = mss(x_err)
+            yv = mss(y_err)
+            zv = mss(z_err)
+            rv = mss(yaw_err)
+            # print(xv, yv, zv, rv)
+            # drone.send_rc_control(min(20, int(xv//2)), min(20, int(zv//2)), min(20, int(yv//2)), 0)
+            if abs(z_err) <= 10 and abs(y_err) <= 50 and abs(x_err) <= 50:
+                print("Saw marker", markId)
+                cv2.destroyAllWindows()
+                return
+            else: 
+                # continue
+                # if abs(y_err) >= 10 or abs(x_err) >= 10:
+                #     drone.send_rc_control(int(xv), 0, int(yv), 0)
+                # else:
+                drone.send_rc_control(int(xv), int(zv//2), int(yv), 0)
+        else:
+            if markId == 2:
+                drone.send_rc_control(0, 0, 0, 0)
+            else:
+                drone.send_rc_control(0, 0, 0, 0)
+
+# See the multiple markers with the same markId (using x coor to compare), follow the nearest one 
+def see_multi(drone, markId):
+    # frame_read = drone.get_frame_read()
+    cap = cv2.VideoCapture(0)
+
+    dictionary = cv2.aruco.Dictionary_get(cv2.aruco.DICT_4X4_250)
+    dictionary = cv2.aruco.Dictionary_get(cv2.aruco.DICT_4X4_250)
+    parameters = cv2.aruco.DetectorParameters_create()
+
+    fs = cv2.FileStorage("calibrate.xml", cv2.FILE_STORAGE_READ)
+    intrinsic = fs.getNode("intrinsic").mat()
+    distortion = fs.getNode("distortion").mat()
+
+    z_pid = PID(kP=0.7, kI=0.0001, kD=0.1)
+    y_pid = PID(kP=0.7, kI=0.0001, kD=0.1)
+    x_pid = PID(kP=0.7, kI=0.0001, kD=0.1)
+    yaw_pid = PID(kP=0.7, kI=0.0001, kD=0.1)
+
+    z_pid.initialize()
+    y_pid.initialize()
+    x_pid.initialize()
+    yaw_pid.initialize()
+
+    while True:
+        # frame = frame_read.frame
+        ret, frame = cap.read()
+        markerCorners, markerIds, rejectedCandidates = cv2.aruco.detectMarkers(frame, dictionary, parameters=parameters)
+        print(markerIds)
+        
+        frame = cv2.aruco.drawDetectedMarkers(frame, markerCorners, markerIds)
+
+        key = cv2.waitKey(33)
+        if key != -1:
+            keyboard(drone, key)
+
+        elif markerIds is not None:
+            # Find the index of markId in markerIds
+            target_idxes = []
+            for i, id in enumerate(markerIds):
+                if id[0] == markId:
+                    target_idxes.append(i)
+                    
+            if not target_idxes:  # No target found
+                continue
+
+            rvec, tvec, _objPoints = cv2.aruco.estimatePoseSingleMarkers(markerCorners, 15, intrinsic, distortion)
+
+            # Find the nearest marker and follow it
+            target_idx = target_idxes[0]
+            if type(target_idxes) == list:
+                min_x_dist = float('Inf')
+                for idx in target_idxes:
+                    x_err = abs(tvec[idx][0][0])  ### TODO: calibration or using distance
+                    if x_err < min_x_dist:
+                        min_x_dist = x_err
+                        target_idx = idx
+                    
+                    # Put x_err of each marker on the frame
+                    text_coor = (np.sum(markerCorners[idx][0], axis=0) / 4).tolist()
+                    text_coor = tuple([int(i) for i in text_coor])
+                    text_coor = (text_coor[0], text_coor[1] + 25 * (i+1))
+                    print(text_coor)    
+                    cv2.putText(frame, text=f'idx: {idx}, x_err: {round(x_err, 2)}',
+                                fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=0.4, 
+                                org=text_coor, color=(0, 255, 0), thickness=1)
+
+            # Display the nearest marker
+            frame = cv2.aruco.drawAxis(frame, intrinsic, distortion, rvec[target_idx], tvec[target_idx], 7)
+
+            (x_err, y_err, z_err) = tvec[target_idx][0]
             z_err = z_err - 50
             x_err = x_err * 2
             y_err = - (y_err + 10) * 2
@@ -208,18 +319,21 @@ def see(drone, markId):
             # drone.send_rc_control(min(20, int(xv//2)), min(20, int(zv//2)), min(20, int(yv//2)), 0)
             if abs(z_err) <= 10 and abs(y_err) <= 50 and abs(x_err) <= 50:
                 print("Saw marker", markId)
+                cap.release()
+                cv2.destroyAllWindows()
                 return
             else: 
                 # continue
                 # if abs(y_err) >= 10 or abs(x_err) >= 10:
                 #     drone.send_rc_control(int(xv), 0, int(yv), 0)
                 # else:
-                drone.send_rc_control(int(xv), int(zv//2), int(yv), 0)
+                # drone.send_rc_control(int(xv), int(zv//2), int(yv), 0)
+                print("Send speed", xv, yv, zv, rv)
         else:
-            if markId == 2:
-                drone.send_rc_control(0, 0, 0, 0)
-            else:
-                drone.send_rc_control(0, 0, 0, 0)
+            # drone.send_rc_control(0, 0, 0, 0)
+            print("Send speed", 0, 0, 0, 0)
+
+        cv2.imshow('drone', frame)
 
 if __name__ == '__main__':
     drone = Tello()
@@ -228,34 +342,35 @@ if __name__ == '__main__':
     drone.takeoff()
     
     # 1. 飛到人臉前，飛過板子，看到第二張人臉，飛過桌子底下
-    see_face(drone, face_cascade)
-    drone.move("up", 75)
-    drone.move("forward", 130)
-    drone.move("down", 130)
-    see_face(drone, face_cascade)
-    drone.move("down", 70)
-    drone.move("forward", 180)
+    # see_face(drone, face_cascade)
+    # drone.move("up", 75)
+    # drone.move("forward", 130)
+    # drone.move("down", 130)
+    # see_face(drone, face_cascade)
+    # drone.move("down", 70)
+    # drone.move("forward", 180)
 
     # 2. 偵測娃娃，開始循線
+    # drone.move("up", 50)
     detected_doll = detect_objects(drone)
-    drone.move("up", 50)
+    print(f"Saw {detect_objects}\n")
     see(drone, 1)
     if detected_doll == "Kanahei":
         trace_line(drone, [0,0,15,0], [0,0,0,1,1,0,0,1,0], False)
         print("1 corner")
-        trace_line(drone, [-20,0,0,0], [0,0,0,0,1,1,0,1,0], True)
+        trace_line(drone, [-15,0,0,0], [0,0,0,0,1,1,0,1,0], True)
         print("2 corner")
         trace_line(drone, [0,0,-10,0], [0,1,0,1,1,0,0,0,0], False)
         print("3 corner")
-        trace_line(drone, [-20,0,0,0], [0,1,0,0,1,1,0,0,0], True)
+        trace_line(drone, [-15,0,0,0], [0,1,0,0,1,1,0,0,0], True)
         print("4 corner")
         trace_line(drone, [0,0,15,0], [0,0,0,1,1,0,0,1,0], False)
         print("5 corner")
-        trace_line(drone, [-20,0,0,0], [0,1,0,1,1,1,0,0,2], True)
+        trace_line(drone, [-15,0,0,0], [0,1,0,1,1,1,0,0,2], True)
         print("6 corner")
-        trace_line(drone, (0,0,20,0), [0,0,0,1,1,0,0,1,0], False)
+        trace_line(drone, (0,0,15,0), [0,0,0,1,1,0,0,1,0], False)
         print("7 corner")
-        trace_line(drone, (-20,0,0,0), [0,0,0,0,1,1,0,1,0], True)
+        trace_line(drone, (-15,0,0,0), [0,0,0,0,1,1,0,1,0], True)
         print("8 corner")
         trace_line(drone, (0,0,-20,0), [0,1,0,1,1,1,0,0,0], False)
         print("9 corner")
@@ -267,23 +382,23 @@ if __name__ == '__main__':
         print("1 corner detected")
 
         print("Moving left!")
-        trace_line(drone, [-20,0,0,0], [0,1,0,1,1,1,0,0,0], True)
+        trace_line(drone, [-15,0,0,0], [2,1,0,1,1,1,0,0,0], True)
         print("2 corner detected")
 
         print("Moving up!")
-        trace_line(drone, (0,0,20,0), [0,0,0,1,1,0,0,1,0], False)
+        trace_line(drone, (0,0,15,0), [0,0,0,1,1,0,0,1,0], False)
         print("3 corner detected")
 
         print("Moving left!")
-        trace_line(drone, (-20,0,0,0), [0,0,0,0,1,1,0,1,0], True)
+        trace_line(drone, (-10,0,0,0), [0,0,0,0,1,1,0,1,0], True)
         print("4 corner detected")
 
         print("Moving down!")
-        trace_line(drone, (0,0,-20,0), [0,1,0,1,1,1,0,0,0], False)
+        trace_line(drone, (0,0,-15,0), [0,1,0,1,1,1,0,0,0], False)
         print("5 corner detected")
 
         print("Moving left!")
-        trace_line(drone, (-20,0,0,0), [0,0,0,0,1,1,0,0,0], True)
+        trace_line(drone, (-10,0,0,0), [0,0,0,0,1,1,0,1,0], True)
         print("6 corner detected")
 
         print("Moving down!")
@@ -291,7 +406,7 @@ if __name__ == '__main__':
         print("7 corner detected")
 
         print("Moving left! Going through the table")
-        trace_line(drone, [-20,0,0,0], [0,1,0,0,1,1,0,0,0], True)
+        trace_line(drone, [-15,0,0,0], [0,1,0,0,1,1,0,0,0], True)
         print("8 corner detected")
 
         print("Moving up!")
@@ -299,8 +414,18 @@ if __name__ == '__main__':
         print("9 corner detected")
 
         print("Moving left!")
-        trace_line(drone, (-25,0,0,0), [0,0,0,0,1,1,0,0,0], True)
+        trace_line(drone, (-20,0,0,0), [0,0,0,0,1,1,0,0,0], True)
         print("10 corner detected")
+
+    drone.rotate_clockwise(180)
+    drone.move("forward", 100)
+    detected_doll = detect_objects(drone)
+    if detected_doll == "Kanahei":
+        drone.move("left", 50)
+    else:
+        drone.move("right", 50)
     
+    drone.move("forward", 100)
+    see(drone, 3)
     drone.land()
     
