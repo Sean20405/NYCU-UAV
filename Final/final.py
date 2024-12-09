@@ -452,6 +452,7 @@ def main():
         trace_line(drone, (-20,0,0,0), [0,2,2,0,1,1,0,0,0], True)
         print("10 corner detected")
 
+    # 結束循線，判斷娃娃決定路徑，準備降落
     see(drone, 2)
     drone.rotate_clockwise(180)
     drone.move("down", 30)
