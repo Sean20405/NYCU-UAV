@@ -9,7 +9,7 @@ from face_detection import see_face
 from object_detection import detect_objects
 
 
-black_thres = 30
+black_thres = 40
 
 sq = {
     "tl":0, "tm":1, "tr":2, "ml":3, "mm":4, "mr":5, "bl":6, "bm":7, "br":8
