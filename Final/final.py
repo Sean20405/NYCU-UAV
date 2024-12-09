@@ -18,11 +18,13 @@ sq = {
 
 face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
 
-def square_same(input, truth):
+def square_same(input, truth, truth2=None):
     for i in range(9):
         if truth[i] == 2:
-            input[i] = 2
-    return input == truth
+            truth[i] = input[i]
+        if truth2 is not None and truth2[i] == 2:
+            truth2[i] = input[i]
+    return input == truth or (truth2 is not None and input == truth2)
 
 def line_follower(frame):
     frame = cv2.resize(frame, (0, 0), fx=0.1, fy=0.1)
@@ -96,9 +98,9 @@ def put_detected_square(frame, detected_squares, is_gray):
         
     return frame
 
-def trace_line(drone, speed_output, target_square, horizontal_trace):
+def trace_line(drone, speed_output, target_square, target_square2=None, horizontal_trace=False):
     detected_squares = [0,0,0,0,0,0,0,0,0]
-    while not square_same(detected_squares, target_square):
+    while not square_same(detected_squares, target_square, target_square2):
         frame = drone.get_frame_read().frame
         frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -391,65 +393,65 @@ def main():
     print(f"Saw {detect_objects}\n")
     see(drone, 1)
     if detected_doll == "Kanahei":
-        trace_line(drone, [0,0,15,0], [0,0,0,1,1,0,0,1,0], False)
+        trace_line(drone, [0,0,15,0], [0,0,0,1,1,0,0,1,0], [0,0,0,1,1,1,0,0,1],  horizontal_trace=False)
         print("1 corner")
-        trace_line(drone, [-15,0,0,0], [0,0,0,0,1,1,0,1,0], True)
+        trace_line(drone, [-15,0,0,0], [0,0,0,0,1,1,0,1,0], horizontal_trace=True)
         print("2 corner")
-        trace_line(drone, [0,0,-15,0], [0,1,0,1,1,0,0,0,0], False)
+        trace_line(drone, [0,0,-15,0], [0,1,0,1,1,0,0,0,0], horizontal_trace=False)
         print("3 corner")
-        trace_line(drone, [-15,0,0,0],  [0,1,2,0,1,2,0,0,0], False)
+        trace_line(drone, [-15,0,0,0],  [0,1,2,0,1,2,0,0,0], horizontal_trace=False)
         print("4 corner")
-        trace_line(drone, [0,0,15,0], [0,0,0,1,1,0,0,1,0], False)
+        trace_line(drone, [0,0,15,0], [0,0,0,1,1,0,0,1,0], horizontal_trace=False)
         print("5 corner")
-        trace_line(drone, [-15,0,0,0], [0,1,0,1,1,1,2,0,2], True)
+        trace_line(drone, [-15,0,0,0], [0,1,0,1,1,1,2,0,2], horizontal_trace=True)
         print("6 corner")
-        trace_line(drone, (0,0,15,0), [0,0,0,1,1,0,0,1,0], False)
+        trace_line(drone, (0,0,15,0), [0,0,0,1,1,0,0,1,0], horizontal_trace=False)
         print("7 corner")
-        trace_line(drone, (-15,0,0,0), [0,0,0,0,1,1,0,1,0], True)
+        trace_line(drone, (-15,0,0,0), [0,0,0,0,1,1,0,1,0], horizontal_trace=True)
         print("8 corner")
-        trace_line(drone, (0,0,-20,0), [0,1,0,1,1,1,0,0,0], False)
+        trace_line(drone, (0,0,-20,0), [0,1,0,1,1,1,0,0,0], horizontal_trace=False)
         print("9 corner")
-        trace_line(drone, (-15,0,0,0), [0,2,2,0,1,1,0,0,0], True)
+        trace_line(drone, (-15,0,0,0), [0,2,2,0,1,1,0,0,0], horizontal_trace=True)
         print("9 corner")
     else:
         print("Moving up!")
-        trace_line(drone, [0,0,15,0], [0,0,0,1,1,0,0,1,0], False)
+        trace_line(drone, [0,0,15,0], [0,0,0,1,1,0,0,1,0], horizontal_trace=False)
         print("1 corner detected")
 
         print("Moving left!")
-        trace_line(drone, [-15,0,0,0], [2,1,0,1,1,1,2,0,0], True)
+        trace_line(drone, [-15,0,0,0], [2,1,0,1,1,1,2,0,0], horizontal_trace=True)
         print("2 corner detected")
 
         print("Moving up!")
-        trace_line(drone, (0,0,15,0), [0,0,0,1,1,0,0,1,0], False)
+        trace_line(drone, (0,0,15,0), [0,0,0,1,1,0,0,1,0], horizontal_trace=False)
         print("3 corner detected")
 
         print("Moving left!")
-        trace_line(drone, (-12,0,0,0), [0,2,2,0,1,1,0,1,2], True)
+        trace_line(drone, (-12,0,0,0), [0,2,2,0,1,1,0,1,2], horizontal_trace=True)
         print("4 corner detected")
 
         print("Moving down!")
-        trace_line(drone, (0,0,-15,0), [0,1,0,1,1,1,0,0,0], False)
+        trace_line(drone, (0,0,-15,0), [0,1,0,1,1,1,0,0,0], horizontal_trace=False)
         print("5 corner detected")
 
         print("Moving left!")
-        trace_line(drone, (-10,0,0,0), [0,0,0,0,1,1,0,1,0], True)
+        trace_line(drone, (-10,0,0,0), [0,0,0,0,1,1,0,1,0], horizontal_trace=True)
         print("6 corner detected")
 
         print("Moving down!")
-        trace_line(drone, [0,0,-15,0], [0,1,0,1,1,0,0,0,0], False)
+        trace_line(drone, [0,0,-15,0], [0,1,0,1,1,0,0,0,0], horizontal_trace=False)
         print("7 corner detected")
 
         print("Moving left! Going through the table")
-        trace_line(drone, [-15,0,0,0],  [0,1,2,0,1,2,0,0,0], True)
+        trace_line(drone, [-15,0,0,0],  [0,1,2,0,1,2,0,0,0], horizontal_trace=True)
         print("8 corner detected")
 
         print("Moving up!")
-        trace_line(drone, [0,0,20,0], [0,0,0,1,1,0,0,1,0], False)
+        trace_line(drone, [0,0,20,0], [0,0,0,1,1,0,0,1,0], horizontal_trace=False)
         print("9 corner detected")
 
         print("Moving left!")
-        trace_line(drone, (-20,0,0,0), [0,2,2,0,1,1,0,0,0], True)
+        trace_line(drone, (-20,0,0,0), [0,2,2,0,1,1,0,0,0], horizontal_trace=True)
         print("10 corner detected")
 
     # 結束循線，判斷娃娃決定路徑，準備降落
