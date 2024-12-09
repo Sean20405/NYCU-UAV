@@ -5,7 +5,7 @@ import math
 from djitellopy import Tello
 from pyimagesearch.pid import PID
 from keyboard_djitellopy import keyboard
-from face_detection import see_face
+# from face_detection import see_face
 from object_detection import detect_objects
 
 
@@ -128,7 +128,6 @@ def trace_line(drone, speed_output, target_square, horizontal_trace):
             drone.send_rc_control(lr, fb, ud, rot)
     drone.send_rc_control(0,0,0,0)
 
-
 def mss(update, max_speed_threshold=30):
     if update > max_speed_threshold:
         update = max_speed_threshold
@@ -140,9 +139,8 @@ def mss(update, max_speed_threshold=30):
 def see(drone, markId):
     frame_read = drone.get_frame_read()
 
-    dictionary = cv2.aruco.Dictionary_get(cv2.aruco.DICT_4X4_250)
-    dictionary = cv2.aruco.Dictionary_get(cv2.aruco.DICT_4X4_250)
-    parameters = cv2.aruco.DetectorParameters_create()
+    dictionary = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_250)
+    parameters = cv2.aruco.DetectorParameters()
 
     fs = cv2.FileStorage("calibrate.xml", cv2.FILE_STORAGE_READ)
     intrinsic = fs.getNode("intrinsic").mat()
