@@ -391,7 +391,7 @@ def main():
         print("2 corner")
 
         print("Move down!")
-        trace_line(drone, (0,0,-10,0), [0,1,0,1,1,1,0,0,0], horizontal_trace=False, target_corner=3)
+        trace_line(drone, [0,0,-10,0], [0,1,0,1,1,1,0,0,0], horizontal_trace=False, target_corner=3)
         print("3 corner")
 
         print("Move left!")
@@ -407,19 +407,19 @@ def main():
         print("6 corner")
 
         print("Move up!")
-        trace_line(drone, (0,0,13,0), [0,0,0,1,1,0,0,1,0], horizontal_trace=False, target_corner=7)
+        trace_line(drone, [0,0,13,0], [0,0,0,1,1,0,0,1,0], horizontal_trace=False, target_corner=7)
         print("7 corner")
 
         print("Move left!")
-        trace_line(drone, (-10,0,0,0), [0,0,0,0,1,1,0,1,2], horizontal_trace=True, target_corner=8)
+        trace_line(drone, [-10,0,0,0], [0,0,0,0,1,1,0,1,2], horizontal_trace=True, target_corner=8)
         print("8 corner")
 
         print("Move down!")
-        trace_line(drone, (0,0,-10,0), [0,1,0,1,1,1,0,0,0], horizontal_trace=False, target_corner=9)
+        trace_line(drone, [0,0,-10,0], [0,1,0,1,1,1,0,0,0], horizontal_trace=False, target_corner=9)
         print("9 corner")
 
         print("Move left!")
-        trace_line(drone, (-10,0,0,0), [0,2,2,0,1,1,0,0,0], horizontal_trace=True, target_corner=10)
+        trace_line(drone, [-10,0,0,0], [0,2,2,0,1,1,0,0,0], horizontal_trace=True, target_corner=10)
         print("10 corner")
     else:
         print("Moving up!")
@@ -431,19 +431,19 @@ def main():
         print("2 corner detected")
 
         print("Moving up!")
-        trace_line(drone, (0,0,13,0), [0,0,0,1,1,0,0,1,0], horizontal_trace=False, target_corner=3)
+        trace_line(drone, [0,0,13,0], [0,0,0,1,1,0,0,1,0], horizontal_trace=False, target_corner=3)
         print("3 corner detected")
 
         print("Moving left!")
-        trace_line(drone, (-10,0,0,0), [0,0,0,0,1,1,0,1,2], horizontal_trace=True, target_corner=4)
+        trace_line(drone, [-10,0,0,0], [0,0,0,0,1,1,0,1,2], horizontal_trace=True, target_corner=4)
         print("4 corner detected")
 
         print("Moving down!")
-        trace_line(drone, (0,0,-10,0), [0,1,0,1,1,1,0,0,0], horizontal_trace=False, target_corner=5)
+        trace_line(drone, [0,0,-10,0], [0,1,0,1,1,1,0,0,0], horizontal_trace=False, target_corner=5)
         print("5 corner detected")
 
         print("Moving left!")
-        trace_line(drone, (-8,0,0,0), [0,0,0,0,1,1,0,1,0], horizontal_trace=True, target_corner=6)
+        trace_line(drone, [-8,0,0,0], [0,0,0,0,1,1,0,1,0], horizontal_trace=True, target_corner=6)
         print("6 corner detected")
 
         print("Moving down!")
@@ -459,7 +459,7 @@ def main():
         print("9 corner detected")
 
         print("Moving left!")
-        trace_line(drone, (-15,0,0,0), [0,2,2,0,1,1,0,0,0], horizontal_trace=True, target_corner=10)
+        trace_line(drone, [-15,0,0,0], [0,2,2,0,1,1,0,0,0], horizontal_trace=True, target_corner=10)
         print("10 corner detected")
 
     # 結束循線，判斷娃娃決定路徑，準備降落
