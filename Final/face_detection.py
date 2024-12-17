@@ -59,7 +59,7 @@ def see_face(drone, face_cascade ):
             keyboard(drone, key)
         elif face_rects is not None and tvec is not None:
             (x_err, y_err, z_err) = tvec[:,0]
-            z_err = z_err - 30
+            z_err = z_err - 40
             x_err = x_err * 2
             y_err = - (y_err + 10) * 2
 
@@ -83,8 +83,8 @@ def see_face(drone, face_cascade ):
             zv = mss(z_err)
             rv = mss(yaw_err)
             # print(xv, yv, zv, rv)
-            drone.send_rc_control(min(20, int(xv//2)), min(20, int(zv//2)), min(20, int(yv//2)), 0)
-            if abs(z_err) <= 10 and abs(y_err) <= 50 and abs(x_err) <= 50:
+            # drone.send_rc_control(min(20, int(xv)), min(20, int(zv//2)), min(20, int(yv//2)), 0)
+            if abs(z_err) <= 15 and abs(y_err) <= 10 and abs(x_err) <= 10:
                 print("Saw face!")
                 cv2.destroyAllWindows()
                 return
