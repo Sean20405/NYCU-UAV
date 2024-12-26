@@ -10,6 +10,11 @@ The lab code for course Computer Vision for UAV Autopilot in NYCU
 >     - 期末競賽 35%
 > - [課程綱要 Syllabus](https://timetable.nycu.edu.tw/?r=main/crsoutline&Acy=113&Sem=1&CrsNo=515614&lang=zh-tw)
 
+### Teammates
+<a href="https://github.com/Sean20405/NYCU-UAV/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=Sean20405/NYCU-UAV" />
+</a>
+
 ### Environment
 - Requirement
     ```
