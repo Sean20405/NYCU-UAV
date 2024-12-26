@@ -107,11 +107,9 @@ def trace_line(drone, speed_output, target_square, horizontal_trace=False, targe
 
         detected_squares, black_ratio = line_follower(gray)
         print(black_ratio)
-        # frame = cv2.putText(frame, text=f'battery: {drone.get_battery()}%', org=(600, 30), fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=0.7, color=(0, 255, 255), thickness=1)
         frame = put_detected_square(frame, detected_squares, True)
         frame = cv2.putText(frame, text=f'{target_corner}', org=(width//2, 60), fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=2, color=(0, 255, 0), thickness=2)
         cv2.imshow("drone", frame)
-        # print(detected_squares)
 
         # Create a blank image for the grid
         grid_image = np.ones((grid_size, grid_size, 3), dtype=np.uint8) * 255  # Start with a white grid
@@ -139,9 +137,9 @@ def trace_line(drone, speed_output, target_square, horizontal_trace=False, targe
         else:
             lr, fb, ud, rot = speed_output
             if horizontal_trace and detected_squares[:3] == [1,1,1]:
-                ud += 7
+                ud += 10
             elif horizontal_trace and  detected_squares[-3:] == [1,1,1]:
-                ud -= 5
+                ud -= 7
             elif not horizontal_trace and detected_squares[::3] == [1,1,1]:
                 lr -= 7
             elif not horizontal_trace and detected_squares[2::3] == [1,1,1]:
@@ -213,37 +211,29 @@ def see(drone, markId):
             V = np.matmul(R, [0, 0, 1])
             rad = math.atan(V[0]/V[2])
             deg = rad / math.pi * 180
-            # print(deg)
-            yaw_err = yaw_pid.update(deg, sleep=0)
             
             x_err = x_pid.update(x_err, sleep=0)
             y_err = y_pid.update(y_err, sleep=0)
             z_err = z_pid.update(z_err, sleep=0)
-            yaw_err = yaw_pid.update(yaw_err, sleep=0)
+            yaw_err = yaw_pid.update(deg*2, sleep=0)
 
             print("errs:", x_err, y_err, z_err, yaw_err)
             
             xv = mss(x_err)
             yv = mss(y_err)
             zv = mss(z_err)
-            rv = mss(yaw_err)
+            rv = int(mss(yaw_err, 50))
             # print(xv, yv, zv, rv)
             # drone.send_rc_control(min(20, int(xv//2)), min(20, int(zv//2)), min(20, int(yv//2)), 0)
-            if abs(z_err) <= 10 and abs(y_err) <= 50 and abs(x_err) <= 50:
+            if abs(z_err) <= 10 and abs(y_err) <= 50 and abs(x_err) <= 50 and abs(yaw_err) <= 10:
                 print("Saw marker", markId)
                 cv2.destroyAllWindows()
                 return
             else: 
-                # continue
-                # if abs(y_err) >= 10 or abs(x_err) >= 10:
-                #     drone.send_rc_control(int(xv), 0, int(yv), 0)
-                # else:
-                drone.send_rc_control(int(xv), int(zv/1.5), int(yv), 0)
+                drone.send_rc_control(int(xv), int(zv/1.5), int(yv), int(rv))
+        
         else:
-            if markId == 2:
-                drone.send_rc_control(0, 0, 0, 0)
-            else:
-                drone.send_rc_control(0, 0, 0, 0)
+            drone.send_rc_control(0, 0, 0, 0)
 
 # See the multiple markers with the same markId (using x coor to compare), follow the nearest one 
 def see_multi(drone, markId):
@@ -315,7 +305,7 @@ def see_multi(drone, markId):
             frame = cv2.aruco.drawAxis(frame, intrinsic, distortion, rvec[target_idx], tvec[target_idx], 7)
 
             (x_err, y_err, z_err) = tvec[target_idx][0]
-            z_err = z_err - 50
+            z_err = z_err - 60
             x_err = x_err * 2
             y_err = - (y_err + 10) * 2
 
@@ -346,15 +336,12 @@ def see_multi(drone, markId):
                 cv2.destroyAllWindows()
                 return
             else: 
-                # continue
-                # if abs(y_err) >= 10 or abs(x_err) >= 10:
-                #     drone.send_rc_control(int(xv), 0, int(yv), 0)
-                # else:
-                # drone.send_rc_control(int(xv), int(zv//2), int(yv), 0)
-                print("Send speed", xv, yv, zv, rv)
+                if abs(y_err) >= 10 or abs(x_err) >= 10:
+                    drone.send_rc_control(int(xv), 0, int(yv), 0)
+                else:
+                    drone.send_rc_control(int(xv), int(zv), int(yv), 0)
         else:
-            # drone.send_rc_control(0, 0, 0, 0)
-            print("Send speed", 0, 0, 0, 0)
+            drone.send_rc_control(0, 0, 0, 0)
 
         cv2.imshow('drone', frame)
 
@@ -394,13 +381,14 @@ def main():
     drone.takeoff()
     
     # 1. 飛到人臉前，飛過板子，看到第二張人臉，飛過桌子底下
+    drone.move("up", 40)
     see_face(drone, face_cascade)
-    drone.move("up", 65)
-    drone.move("forward", 160)
-    drone.move("down", 180)
+    drone.move("up", 60)
+    drone.move("forward", 130)
+    drone.move("down", 150)
     see_face(drone, face_cascade)
-    drone.move("down", 20)
-    drone.move("forward", 180)
+    drone.move("down", 50)
+    drone.move("forward", 150)
 
     # 2. 偵測娃娃，開始循線
     drone.move("up", 70)
@@ -409,7 +397,7 @@ def main():
     see(drone, 1)
     if detected_doll == "Kanahei":
         print("Move up!")
-        trace_line(drone, [0,0,13,0], [0,0,0,1,1,0,0,1,0], horizontal_trace=False, target_corner=1)
+        trace_line(drone, [0,0,15,0], [0,0,0,1,1,0,0,1,0], horizontal_trace=False, target_corner=1)
         print("1 corner")
 
         print("Move left!")
@@ -421,7 +409,7 @@ def main():
         print("3 corner")
 
         print("Moving left! Going through the table")
-        trace_line(drone, [-15,0,0,0],  [0,1,2,0,1,1,0,0,0], horizontal_trace=True, target_corner=4)
+        trace_line(drone, [-17,0,0,0],  [0,1,2,0,1,1,0,0,0], horizontal_trace=True, target_corner=4)
         print("4 corner")
 
         print("Move up!")
@@ -429,66 +417,67 @@ def main():
         print("5 corner")
 
         print("Move left!")
-        trace_line(drone, [-10,0,0,0], [0,1,0,1,1,1,2,0,2], horizontal_trace=True, target_corner=6)
+        trace_line(drone, [-15,0,0,0], [0,1,0,1,1,1,2,0,2], horizontal_trace=True, target_corner=6)
         print("6 corner")
 
         print("Move up!")
-        trace_line(drone, (0,0,13,0), [0,0,0,1,1,0,0,1,0], horizontal_trace=False, target_corner=7)
+        trace_line(drone, (0,0,20,0), [0,0,0,1,1,0,0,1,0], horizontal_trace=False, target_corner=7)
         print("7 corner")
 
         print("Move left!")
-        trace_line(drone, (-10,0,0,0), [0,0,0,0,1,1,0,1,2], horizontal_trace=True, target_corner=8)
+        trace_line(drone, (-15,0,0,0), [0,0,0,0,1,1,0,1,0], horizontal_trace=True, target_corner=8)
         print("8 corner")
 
         print("Move down!")
-        trace_line(drone, (0,0,-10,0), [0,1,2,1,1,1,0,0,0], horizontal_trace=False, target_corner=9)
+        trace_line(drone, (0,0,-15,0), [0,1,2,1,1,1,0,0,0], horizontal_trace=False, target_corner=9)
         print("9 corner")
 
         print("Move left!")
-        trace_line(drone, (-10,0,0,0), [0,2,2,0,1,1,0,0,0], horizontal_trace=True, target_corner=10)
+        trace_line(drone, (-15,0,0,0), [0,2,2,0,1,1,0,0,0], horizontal_trace=True, target_corner=10)
         print("10 corner")
     else:
         print("Moving up!")
-        trace_line(drone, [0,0,13,0], [0,0,0,1,1,0,0,1,0], horizontal_trace=False, target_corner=1)
+        trace_line(drone, [0,0,15,0], [0,0,0,1,1,0,0,1,0], horizontal_trace=False, target_corner=1)
         print("1 corner detected")
 
         print("Moving left!")
-        trace_line(drone, [-10,0,0,0], [0,1,0,1,1,1,0,0,0], horizontal_trace=True, target_corner=2)
+        trace_line(drone, [-15,0,0,0], [0,1,0,1,1,1,0,0,0], horizontal_trace=True, target_corner=2)
         print("2 corner detected")
 
         print("Moving up!")
-        trace_line(drone, (0,0,13,0), [0,0,0,1,1,0,0,1,0], horizontal_trace=False, target_corner=3)
+        trace_line(drone, (0,0,16,0), [0,0,0,1,1,0,0,1,0], horizontal_trace=False, target_corner=3)
         print("3 corner detected")
 
         print("Moving left!")
-        trace_line(drone, (-10,0,0,0), [0,0,0,0,1,1,0,1,2], horizontal_trace=True, target_corner=4)
+        trace_line(drone, (-15,0,0,0), [0,0,0,0,1,1,0,1,2], horizontal_trace=True, target_corner=4)
         print("4 corner detected")
 
         print("Moving down!")
-        trace_line(drone, (0,0,-10,0), [0,1,0,1,1,0,0,0,0], horizontal_trace=False, target_corner=5)
+        trace_line(drone, (0,0,-17,0), [0,1,0,1,1,1,0,0,0], horizontal_trace=False, target_corner=5)
         print("5 corner detected")
 
         print("Moving left!")
-        trace_line(drone, (-8,0,0,0), [0,0,0,0,1,1,0,1,0], horizontal_trace=True, target_corner=6)
+        trace_line(drone, (-15,0,0,0), [0,0,0,0,1,1,0,1,0], horizontal_trace=True, target_corner=6)
         print("6 corner detected")
 
         print("Moving down!")
-        trace_line(drone, [0,0,-10,0], [0,1,0,1,1,0,0,0,0], horizontal_trace=False, target_corner=7)
+        trace_line(drone, [0,0,-17,0], [0,1,0,1,1,0,0,0,0], horizontal_trace=False, target_corner=7)
         print("7 corner detected")
 
         print("Moving left! Going through the table")
-        trace_line(drone, [-15,0,0,0],  [0,1,2,0,1,1,0,0,0], horizontal_trace=True, target_corner=8)
+        trace_line(drone, [-17,0,0,0],  [0,1,2,0,1,1,0,0,0], horizontal_trace=True, target_corner=8)
         print("8 corner detected")
 
         print("Moving up!")
-        trace_line(drone, [0,0,13,0], [2,0,0,1,1,0,0,1,0], horizontal_trace=False, target_corner=9)
+        trace_line(drone, [0,0,20,0], [2,0,0,1,1,0,0,1,0], horizontal_trace=False, target_corner=9)
         print("9 corner detected")
 
         print("Moving left!")
-        trace_line(drone, (-15,0,0,0), [0,2,2,0,1,1,0,0,0], horizontal_trace=True, target_corner=10)
+        trace_line(drone, (-17,0,0,0), [0,2,2,0,1,1,0,0,0], horizontal_trace=True, target_corner=10)
         print("10 corner detected")
 
     # 結束循線，判斷娃娃決定路徑，準備降落
+    drone.move("back", 30)
     see(drone, 2)
     drone.rotate_clockwise(180)
     drone.move("down", 30)
@@ -498,10 +487,11 @@ def main():
     else:
         drone.move("right", 50)
     drone.move("up", 30)
-    drone.move("forward", 180)
+    drone.move("forward", 230)
     see_multi(drone, 3)
     drone.land()
     
 if __name__ == "__main__":
     # test()
     main()
+
